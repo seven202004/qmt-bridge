@@ -69,12 +69,23 @@ class XtTraderManager:
                 logger.exception("Error stopping XtQuantTrader")
             self._trader = None
 
-    def _resolve_account(self, account_id: str = ""):
-        """解析交易账户，返回 StockAccount 实例。"""
-        if account_id and account_id != self.account_id:
-            from xtquant.xttype import StockAccount
-            return StockAccount(account_id)
-        return self._account
+    def _resolve_account(self, account_id: str = "", account_type: str = "STOCK"):
+        """解析交易账户，返回 StockAccount 实例。
+
+        Args:
+            account_id: 资金账号；空则用默认账户（self.account_id）。
+            account_type: xtquant ``StockAccount`` 的账户类型（如 STOCK/CREDIT/FUTURE）。
+                融资融券/信用账户必须传 ``'CREDIT'``，否则 ``query_credit_*`` / 两融下单
+                无法按信用账户正确路由；普通证券账户保持默认 ``'STOCK'``。
+
+        Returns:
+            :class:`xtquant.xttype.StockAccount` 实例。
+        """
+        if account_type == "STOCK" and (not account_id or account_id == self.account_id):
+            # 普通账户 + 默认账号：复用连接时缓存的默认账户，避免重复构造
+            return self._account
+        from xtquant.xttype import StockAccount
+        return StockAccount(account_id or self.account_id, account_type)
 
     # ------------------------------------------------------------------
     # 委托操作
@@ -190,7 +201,7 @@ class XtTraderManager:
                      strategy_name: str = "", order_remark: str = "",
                      account_id: str = ""):
         """信用交易下单（通过 order_type 常量区分融资/融券）→ _trader.order_stock()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.order_stock(
             account, stock_code, order_type, order_volume,
             price_type, price, strategy_name, order_remark,
@@ -198,32 +209,32 @@ class XtTraderManager:
 
     def query_credit_positions(self, account_id: str = ""):
         """查询信用账户持仓 → _trader.query_stock_positions()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_stock_positions(account)
 
     def query_credit_detail(self, account_id: str = ""):
         """查询信用账户资产详情 → _trader.query_credit_detail()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_credit_detail(account)
 
     def query_stk_compacts(self, account_id: str = ""):
         """查询信用负债合约 → _trader.query_stk_compacts()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_stk_compacts(account)
 
     def query_credit_slo_code(self, account_id: str = ""):
         """查询融券标的券列表 → _trader.query_credit_slo_code()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_credit_slo_code(account)
 
     def query_credit_subjects(self, account_id: str = ""):
         """查询信用标的券列表 → _trader.query_credit_subjects()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_credit_subjects(account)
 
     def query_credit_assure(self, account_id: str = ""):
         """查询信用担保品信息 → _trader.query_credit_assure()"""
-        account = self._resolve_account(account_id)
+        account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.query_credit_assure(account)
 
     # ------------------------------------------------------------------

@@ -226,9 +226,9 @@
 |------|------|------|
 | POST | `/api/credit/order` | 信用交易下单 |
 | GET | `/api/credit/positions` | 信用持仓 |
-| GET | `/api/credit/detail` | 信用资产详情 |
-| GET | `/api/credit/stk_compacts` | 负债合约查询 |
-| GET | `/api/credit/slo_code` | 可融券标的 |
+| GET | `/api/credit/asset` | 信用资产详情 |
+| GET | `/api/credit/debt` | 负债合约查询 |
+| GET | `/api/credit/slo_stocks` | 可融券标的 |
 | GET | `/api/credit/subjects` | 标的证券 |
 | GET | `/api/credit/assure` | 担保品信息 |
 

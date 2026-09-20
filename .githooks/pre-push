@@ -1,0 +1,8 @@
+#!/bin/sh
+# 推送前跑本地门禁，防止把 lint/类型/测试不通过的代码推上去。
+#
+# 仓库的 GitHub Actions 当前没有运行记录，所以这道本地闸门是实际生效的那道。
+# 临时跳过：git push --no-verify
+#
+# 启用（新克隆的仓库需要执行一次）：git config core.hooksPath .githooks
+exec sh scripts/verify.sh

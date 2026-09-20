@@ -144,6 +144,11 @@ lint:
 # 格式化 + 检查
 check: fmt lint
 
+# 本地门禁：lint + 格式检查 + 类型检查 + 测试（CI 未启用时的替代闸门，
+# pre-push hook 调用的也是同一脚本：scripts/verify.sh）
+verify:
+    sh scripts/verify.sh
+
 # ─────────────────────────── 构建 ───────────────────────────
 
 # 构建 wheel 和 sdist

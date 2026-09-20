@@ -47,7 +47,9 @@ jobs:
       - name: Install package and tools
         run: |
           pip install -e ".[server,ws]"
-          pip install ruff mypy
+          # 与本地验证过的版本一致：ruff 的默认规则集会随版本变化，
+          # 不钉版本的话上游一发新版就可能让 CI 无端变红。
+          pip install "ruff==0.16.8" "mypy==2.3.1"
 
       - name: Run ruff
         run: python -m ruff check src/ tests/ dashboard/

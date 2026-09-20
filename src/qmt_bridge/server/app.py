@@ -220,13 +220,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # 注册 WebSocket 端点（实时数据推送）
     # WebSocket 不加串行化依赖，避免长连接永久持锁
     # ------------------------------------------------------------------
-    from .ws import download_progress, realtime, whole_quote
+    from .ws import download_progress, l2_thousand, realtime, whole_quote
     from .ws import formula as formula_ws
 
     app.include_router(realtime.router)
     app.include_router(whole_quote.router)
     app.include_router(download_progress.router)
     app.include_router(formula_ws.router)
+    # 千档行情：文档（docs/websocket.md）与客户端 subscribe_l2_thousand() 都依赖它，
+    # 早先漏了这一行，客户端调用只会拿到连接被拒。
+    app.include_router(l2_thousand.router)
 
     # ------------------------------------------------------------------
     # 注册通知路由（仅在配置中启用通知时加载）

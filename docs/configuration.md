@@ -19,6 +19,11 @@ QMT Bridge 支持通过 `.env` 文件、环境变量或 CLI 参数进行配置�
 | `QMT_BRIDGE_TRADING_ENABLED` | `--trading` | `false` | 是否启用交易模块 |
 | `QMT_BRIDGE_MINI_QMT_PATH` | `--mini-qmt-path` | _(空)_ | miniQMT 安装路径（交易模块需要） |
 | `QMT_BRIDGE_TRADING_ACCOUNT_ID` | `--account-id` | _(空)_ | 交易账户 ID |
+| `QMT_BRIDGE_SCHEDULER_KLINE_ENABLED` | — | `true` | `qmt-scheduler` 是否执行 K 线增量下载 |
+| `QMT_BRIDGE_SCHEDULER_KLINE_PERIODS` | — | `1d,5m,1m` | 增量下载的 K 线周期（逗号分隔） |
+| `QMT_BRIDGE_SCHEDULER_KLINE_SECTORS` | — | `沪深A股,沪深ETF,沪深指数` | K 线下载的板块范围（逗号分隔） |
+| `QMT_BRIDGE_SCHEDULER_FINANCIAL_ENABLED` | — | `true` | `qmt-scheduler` 是否执行财务数据增量下载 |
+| `QMT_BRIDGE_SCHEDULER_FINANCIAL_SECTORS` | — | `沪深A股` | 财务数据下载的板块范围（财务数据只对 A 股有意义） |
 
 ## .env 文件示例
 

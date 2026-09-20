@@ -107,6 +107,13 @@
 | GET | `/api/cb/list` | 可转债列表 |
 | GET | `/api/cb/info` | 可转债信息 |
 
+## Bond — 债券（不含可转债）`/api/bond/*`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/bond/list` | 沪深债券列表（依次尝试多个债券板块并合并去重） |
+| GET | `/api/bond/detail` | 债券合约详情 |
+
 ## Futures — 期货 `/api/futures/*`
 
 | 方法 | 路径 | 说明 |
@@ -226,6 +233,8 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/credit/order` | 信用交易下单 |
+| POST | `/api/credit/cancel` | 信用撤单（必须按信用账户口径撤，否则撤的是另一个账号的委托） |
+| GET | `/api/credit/orders` | 信用账户当日委托 |
 | GET | `/api/credit/positions` | 信用持仓 |
 | GET | `/api/credit/asset` | 信用资产详情 |
 | GET | `/api/credit/debt` | 负债合约查询 |
@@ -266,3 +275,11 @@
 | GET | `/api/bank/info` | 银行信息 |
 | POST | `/api/bank/amount` | 银行余额查询 |
 | GET | `/api/bank/transfer_stream` | 转账流水 |
+
+## Notify — 通知推送 `/api/notify/*`
+
+仅在 `QMT_BRIDGE_NOTIFY_ENABLED=true` 时注册。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/notify/test` | 向所有已配置后端发送测试通知（绕过事件类型过滤，用于验证渠道配置） |

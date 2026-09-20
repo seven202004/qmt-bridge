@@ -133,9 +133,16 @@ class XtTraderManager:
         self._trader.register_callback(self._callback)
         self._trader.start()
 
-        result = self._trader.connect()
-        if result != 0:
-            raise RuntimeError(f"XtQuantTrader connect failed: {result}")
+        try:
+            result = self._trader.connect()
+            if result != 0:
+                raise RuntimeError(f"XtQuantTrader connect failed: {result}")
+        except Exception:
+            # 连接失败必须 stop() 释放这次半开会话：客户端会按 session 记住在线状态，
+            # 不释放就留着一条"幽灵连接"（客户端日志里表现为该 session 一直在线）。
+            # 调用方（含启动重连循环）会新建 manager 再试，这里只负责清理后原样抛出。
+            self.disconnect()
+            raise
 
         result = self._trader.subscribe(self._account)
         if result != 0:

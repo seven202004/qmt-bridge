@@ -12,6 +12,7 @@
 不再随 API 服务启动，避免 xtdata C 扩展并发调用崩溃。
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -24,6 +25,47 @@ from .xtdata_lock import XtdataSerializerMiddleware
 
 # 全局日志记录器，用于记录服务端运行状态
 logger = logging.getLogger("qmt_bridge")
+
+# 交易模块首连失败后的重连间隔（秒）。
+# 客户端还没启动、或券商下发了严格连接校验（客户端日志 "pid not allowed"）时，
+# 首连必然失败；此前只能重启服务才能恢复，现在按固定间隔重试到连上为止。
+_TRADING_RETRY_SECONDS = 60.0
+
+
+def _new_trader_manager(settings: Settings):
+    """构造交易管理器（只构造，不连接）。"""
+    from .trading.manager import XtTraderManager
+
+    return XtTraderManager(
+        mini_qmt_path=settings.mini_qmt_path,
+        account_id=settings.trading_account_id,
+    )
+
+
+def _publish_trader(app: FastAPI, manager) -> None:
+    """把已连接的管理器发布到 app.state，并接入通知后端（若已启用）。"""
+    app.state.trader_manager = manager
+    notifier = getattr(app.state, "notifier_manager", None)
+    if notifier is not None and hasattr(manager, "_callback"):
+        manager._callback.set_notifier(notifier)
+
+
+async def _trading_retry_loop(app: FastAPI, settings: Settings) -> None:
+    """首连失败后的后台重连循环：连上即发布并退出。"""
+    while True:
+        await asyncio.sleep(_TRADING_RETRY_SECONDS)
+        manager = _new_trader_manager(settings)
+        try:
+            # connect() 是阻塞调用（被客户端拒绝时约 4s 才返回），放线程里执行，
+            # 否则重连期间会把事件循环连同行情接口一起卡住。
+            await asyncio.to_thread(manager.connect)
+        except Exception as exc:  # noqa: BLE001  失败原因只进日志，继续下一轮
+            logger.warning("Trading module reconnect failed: %s", exc)
+            continue
+        _publish_trader(app, manager)
+        logger.info("Trading module reconnected")
+        return
+
 
 # ── xtdata 并发保护 ─────────────────────────────────────────────
 # xtdata 的 C 扩展不是线程安全的。FastAPI 把同步路由处理函数分发到
@@ -52,24 +94,23 @@ async def _lifespan(app: FastAPI):
     """
     settings: Settings = get_settings()
 
+    retry_task: asyncio.Task | None = None
+
     # 如果配置中启用了交易模块，则初始化 xttrader 交易管理器
     if settings.trading_enabled:
         try:
-            from .trading.manager import XtTraderManager
-
             # 创建交易管理器实例，传入 miniQMT 安装路径和资金账号
-            manager = XtTraderManager(
-                mini_qmt_path=settings.mini_qmt_path,
-                account_id=settings.trading_account_id,
-            )
+            manager = _new_trader_manager(settings)
             # 连接到 miniQMT 客户端（底层调用 xttrader.connect()）
             manager.connect()
             # 将管理器存储到 app.state，供各路由通过依赖注入获取
-            app.state.trader_manager = manager
+            _publish_trader(app, manager)
             logger.info("Trading module initialized")
         except Exception:
             logger.exception("Failed to initialize trading module")
             app.state.trader_manager = None
+            # 首连失败不再永久降级为 503：交给后台循环重试（客户端后启动也能自愈）
+            retry_task = asyncio.create_task(_trading_retry_loop(app, settings))
     else:
         app.state.trader_manager = None
 
@@ -87,8 +128,8 @@ async def _lifespan(app: FastAPI):
             # 如果交易模块也已启用，将通知器注入到交易回调中
             # 这样当 xttrader 产生委托/成交回调时，可自动推送通知
             trader_manager = getattr(app.state, "trader_manager", None)
-            if trader_manager is not None and hasattr(trader_manager, "_callback"):
-                trader_manager._callback.set_notifier(notifier)
+            if trader_manager is not None:
+                _publish_trader(app, trader_manager)
         except Exception:
             logger.exception("Failed to initialize notification module")
             app.state.notifier_manager = None
@@ -96,6 +137,14 @@ async def _lifespan(app: FastAPI):
         app.state.notifier_manager = None
 
     yield  # --- 应用运行中，以下为关闭阶段 ---
+
+    # 先停掉重连循环：否则它会在我们断开之后把连接又建起来
+    if retry_task is not None:
+        retry_task.cancel()
+        try:
+            await retry_task
+        except asyncio.CancelledError:
+            pass
 
     # 停止通知模块，释放后台资源
     notifier_manager = getattr(app.state, "notifier_manager", None)

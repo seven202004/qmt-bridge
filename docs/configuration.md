@@ -12,6 +12,7 @@ QMT Bridge 支持通过 `.env` 文件、环境变量或 CLI 参数进行配置�
 | `QMT_BRIDGE_LOG_FILE` | — | _(空)_ | 日志文件路径；留空只输出到控制台，目录会自动创建 |
 | `QMT_BRIDGE_LOG_MAX_BYTES` | — | `10485760` | 单个日志文件大小上限（字节），超过后轮转 |
 | `QMT_BRIDGE_LOG_BACKUP_COUNT` | — | `5` | 保留的历史日志文件数量 |
+| `QMT_BRIDGE_LOG_CONSOLE` | — | `true` | 是否同时输出到控制台。被父进程以文件重定向方式拉起（如 `open(log, "a")`）时置 `false`：那些 stdout/stderr 落不进 `RotatingFileHandler`，会变成一份无法轮转、无限增长的日志副本 |
 | `QMT_BRIDGE_LOG_ACCESS` | — | `true` | 是否输出每个 HTTP 请求的访问日志 |
 | `QMT_BRIDGE_WORKERS` | `--workers` | `1` | Worker 数量（Windows 下建议保持 1） |
 | `QMT_BRIDGE_API_KEY` | `--api-key` | _(空)_ | API Key，用于保护交易端点 |

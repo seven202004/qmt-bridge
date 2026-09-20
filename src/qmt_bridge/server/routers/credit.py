@@ -2,6 +2,8 @@
 
 对齐 xttrader 真实信用交易 API：
 - credit_order — 信用交易下单（通过 order_type 常量区分）
+- cancel_credit_order — 信用账户撤单
+- query_credit_orders — 查询信用账户当日委托
 - query_credit_positions — 查询信用持仓
 - query_credit_detail — 查询信用账户资产详情
 - query_stk_compacts — 查询信用负债合约
@@ -13,8 +15,8 @@
 from fastapi import APIRouter, Depends, Query
 
 from ..deps import get_trader_manager
-from ..helpers import _numpy_to_python, ok_response
-from ..models import CreditOrderRequest
+from ..helpers import _numpy_to_python
+from ..models import CancelRequest, CreditOrderRequest
 from ..security import require_api_key
 
 router = APIRouter(prefix="/api/credit", tags=["credit"], dependencies=[Depends(require_api_key)])
@@ -34,6 +36,26 @@ def credit_order(req: CreditOrderRequest, manager=Depends(get_trader_manager)):
         account_id=req.account_id,
     )
     return {"order_id": result, "status": "submitted"}
+
+
+@router.post("/cancel")
+def cancel_credit_order(req: CancelRequest, manager=Depends(get_trader_manager)):
+    """信用账户同步撤单 → manager.cancel_credit_order()"""
+    result = manager.cancel_credit_order(order_id=req.order_id,
+                                         account_id=req.account_id)
+    return {"status": "ok", "data": _numpy_to_python(result)}
+
+
+@router.get("/orders")
+def query_credit_orders(
+    account_id: str = Query("", description="交易账户 ID"),
+    cancelable_only: bool = Query(False, description="仅返回可撤委托"),
+    manager=Depends(get_trader_manager),
+):
+    """查询信用账户当日委托列表 → manager.query_credit_orders()"""
+    result = manager.query_credit_orders(account_id=account_id,
+                                         cancelable_only=cancelable_only)
+    return {"data": _numpy_to_python(result)}
 
 
 @router.get("/positions")

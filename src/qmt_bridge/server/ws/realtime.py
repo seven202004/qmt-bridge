@@ -21,17 +21,25 @@
     3. 收到推送后按时间戳与本地数组末尾比较：
        - 时间戳相同 → 更新最后一根（盘中未完结柱）
        - 时间戳更大 → 追加新柱
+
+    若历史数据使用了复权（如 dividend_type="front"），订阅时也必须传相同的
+    dividend_type，否则推送的未复权价格与已复权历史数据不在同一价格尺度上。
+    底层通过 xtdata.subscribe_quote2() 支持该参数。
 """
 
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from xtquant import xtdata
 
 from ..helpers import _numpy_to_python
+from ..logging_setup import summarize_codes
 
 router = APIRouter()
+
+logger = logging.getLogger("qmt_bridge.ws.realtime")
 
 
 @router.websocket("/ws/realtime")
@@ -46,6 +54,9 @@ async def ws_realtime(ws: WebSocket):
 
             {"stocks": ["000001.SZ", "600000.SH"], "period": "tick"}
 
+        可选传入 ``"dividend_type"``（``none``/``front``/``back``/``front_ratio``/
+        ``back_ratio``）以与 REST 历史数据的复权方式保持一致。
+
         服务端持续推送行情数据 JSON，直到客户端断开连接。
     """
     await ws.accept()
@@ -58,13 +69,16 @@ async def ws_realtime(ws: WebSocket):
         payload = json.loads(msg)
         stocks: list[str] = payload.get("stocks", [])
         period: str = payload.get("period", "tick")
+        # 复权方式，缺省 None 时行为与 subscribe_quote 一致
+        dividend_type: str | None = payload.get("dividend_type") or None
 
         async def _send(data):
             """异步发送数据到 WebSocket 客户端（忽略发送失败）。"""
             try:
                 await ws.send_json(data)
             except Exception:
-                pass
+                # 推送失败通常意味着客户端已断开，不值得刷 ERROR，但 debug 级要留痕
+                logger.debug("行情推送失败 client=%s", ws.client, exc_info=True)
 
         def on_data(data):
             """xtdata 行情回调 — 在 xtdata 后台线程中被调用。
@@ -77,19 +91,32 @@ async def ws_realtime(ws: WebSocket):
 
         # 逐只股票订阅行情
         for stock in stocks:
-            seq = xtdata.subscribe_quote(
+            # subscribe_quote2 是 subscribe_quote 的底层实现，额外支持复权参数
+            seq = xtdata.subscribe_quote2(
                 stock_code=stock,
                 period=period,
+                dividend_type=dividend_type,
                 callback=on_data,
             )
             seq_ids.append(seq)
+
+        # 断开时那行只有「订阅数」，这里补上「订阅了什么」：
+        # 客户端说收不到行情时，先看这行确认服务端到底有没有按它的请求去订阅。
+        logger.info(
+            "行情订阅已建立 client=%s 周期=%s 复权=%s 股票=%d只 %s",
+            ws.client, period, dividend_type or "none", len(seq_ids),
+            summarize_codes(stocks),
+        )
 
         # 保持连接存活，等待客户端断开
         while True:
             await ws.receive_text()
 
     except WebSocketDisconnect:
-        pass
+        logger.info("行情订阅客户端断开 client=%s 订阅数=%d", ws.client, len(seq_ids))
+    except Exception:
+        logger.exception("行情 WebSocket 异常 client=%s", ws.client)
+        raise
     finally:
         # 清理：取消所有行情订阅
         for seq in seq_ids:

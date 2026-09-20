@@ -74,6 +74,7 @@ async def ws_formula(ws: WebSocket):
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
+                logger.debug("公式订阅收到非法 JSON client=%s", ws.client)
                 await ws.send_json({"error": "invalid JSON"})
                 continue
 
@@ -105,7 +106,10 @@ async def ws_formula(ws: WebSocket):
                             ws.send_json(payload), loop
                         )
                     except Exception:
-                        pass
+                        logger.debug(
+                            "公式结果推送失败 formula=%s stock=%s", formula, stock,
+                            exc_info=True,
+                        )
 
                 # 向 xtdata 注册公式订阅
                 seq_id = xtdata.subscribe_formula(
@@ -113,6 +117,10 @@ async def ws_formula(ws: WebSocket):
                     dividend_type, _callback, **params,
                 )
                 subscriptions[seq_id] = True
+                logger.info(
+                    "公式订阅已建立 client=%s formula=%s stock=%s 周期=%s seq_id=%s",
+                    ws.client, formula_name, stock_code, period, seq_id,
+                )
                 await ws.send_json({"action": "subscribed", "seq_id": seq_id})
 
             elif action == "unsubscribe":
@@ -121,17 +129,24 @@ async def ws_formula(ws: WebSocket):
                 if seq_id is not None and seq_id in subscriptions:
                     xtdata.unsubscribe_formula(seq_id)
                     del subscriptions[seq_id]
+                    logger.info(
+                        "公式订阅已取消 client=%s seq_id=%s 剩余=%d",
+                        ws.client, seq_id, len(subscriptions),
+                    )
                     await ws.send_json({"action": "unsubscribed", "seq_id": seq_id})
                 else:
+                    # 客户端消息对不上服务端状态，接口层查不出来，只能靠这行
+                    logger.debug("公式退订请求无效 client=%s seq_id=%s", ws.client, seq_id)
                     await ws.send_json({"error": "unknown seq_id"})
 
             else:
+                logger.debug("公式订阅协议未知 action=%s client=%s", action, ws.client)
                 await ws.send_json({"error": f"unknown action: {action}"})
 
     except WebSocketDisconnect:
-        pass
+        logger.info("公式订阅客户端断开 client=%s 订阅数=%d", ws.client, len(subscriptions))
     except Exception:
-        logger.exception("formula WS error")
+        logger.exception("公式 WebSocket 异常 client=%s", ws.client)
     finally:
         # 清理：取消所有未取消的公式订阅
         from xtquant import xtdata as _xtd
@@ -139,7 +154,7 @@ async def ws_formula(ws: WebSocket):
             try:
                 _xtd.unsubscribe_formula(seq_id)
             except Exception:
-                pass
+                logger.debug("取消公式订阅失败 seq_id=%s", seq_id, exc_info=True)
 
 
 def _safe_serialize(data):

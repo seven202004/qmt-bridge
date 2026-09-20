@@ -183,11 +183,9 @@ class NotifierManager:
             True 表示应该发送通知，False 表示应该过滤掉。
         """
         event_type = event.get("type", "")
-        if event_type in self._deny:
-            return False
-        if self._allow is not None and event_type not in self._allow:
-            return False
-        return True
+        return event_type not in self._deny and (
+            self._allow is None or event_type in self._allow
+        )
 
     async def dispatch(self, event: dict, *, bypass_filter: bool = False) -> None:
         """将事件分发给所有通知后端。

@@ -10,10 +10,14 @@
 - xtdata.get_quote_server_status()    — 获取行情服务器状态
 """
 
+import logging
+
 from fastapi import APIRouter, Query
 from xtquant import xtdata
 
 from ..helpers import _numpy_to_python
+
+logger = logging.getLogger("qmt_bridge")
 
 router = APIRouter(prefix="/api/meta", tags=["meta"])
 
@@ -113,7 +117,7 @@ def get_xtdata_version():
     try:
         import xtquant
         version = getattr(xtquant, "__version__", "unknown")
-    except Exception:
+    except Exception:  # noqa: BLE001 — 版本探测失败降级为 unknown，不值得让接口 500
         version = "unknown"
     return {"xtdata_version": version}
 
@@ -126,12 +130,13 @@ def get_connection_status():
         connected: 布尔值，表示是否已连接。
         error: 连接异常时的错误信息（可选）。
 
-    底层调用: xtdata.get_client().get_connect_status()
+    底层调用: xtdata.get_client().is_connected()
     """
     try:
-        status = xtdata.get_client().get_connect_status()
+        status = xtdata.get_client().is_connected()
         return {"connected": status}
     except Exception as e:
+        logger.warning("查询 xtdata 连接状态失败: %s", e, exc_info=True)
         return {"connected": False, "error": str(e)}
 
 
@@ -161,4 +166,9 @@ def get_quote_server_status():
         status = xtdata.get_quote_server_status()
         return {"data": _numpy_to_python(status)}
     except Exception as e:
+        # 返回体里也有 error 字段，但那只对调用方可见；服务端必须自己留痕，
+        # 否则「接口一直报这个错」在服务端日志里完全查不到。
+        logger.warning("查询行情服务器状态失败: %s", e, exc_info=True)
         return {"error": str(e)}
+
+

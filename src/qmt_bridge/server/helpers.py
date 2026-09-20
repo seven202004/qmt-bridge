@@ -10,14 +10,56 @@ xtdata 的行情查询接口（如 get_market_data / get_market_data_ex / get_fi
 本模块的函数负责将这些数据统一转换为可序列化的 Python 原生类型。
 """
 
+import logging
+import math
+
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger("qmt_bridge")
+from fastapi import HTTPException
+
+
+def _parse_price_query(price: str):
+    """把价格位查询串解析为 ``xtdata.get_l2thousand_queue`` 可接受的 price 参数。
+
+    Args:
+        price: 查询串，支持单个价格 ``"10.5"``、逗号分隔多个价格
+            ``"10.5,10.6"``、或 ``"10.5-10.8"`` 区间；空串表示全部价格。
+
+    Returns:
+        float | list[float] | tuple[float, float] | None
+
+    Raises:
+        HTTPException: 400，查询串不是合法的价格或价格区间。
+    """
+    price = price.strip()
+    if not price:
+        return None
+    try:
+        if "-" in price:
+            start_text, _, end_text = price.partition("-")
+            start_value, end_value = float(start_text), float(end_text)
+            if start_value > end_value:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"无效的 price 区间（起始价大于结束价）: {price}",
+                )
+            return (start_value, end_value)
+        values = [float(p) for p in price.split(",") if p.strip()]
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail=f"无效的 price 参数: {price}"
+        ) from exc
+    return values[0] if len(values) == 1 else values
 
 
 def _numpy_to_python(obj):
     """递归地将嵌套数据结构中的 numpy 类型转换为 Python 原生类型。
 
     处理规则：
+    - pd.DataFrame: 转为按行记录列表（index 提升为普通列）
+    - pd.Series: 转为 dict
     - dict: 递归处理所有值
     - list/tuple: 递归处理所有元素
     - float: NaN / Inf / -Inf 转为 None（避免 JSON 序列化错误）
@@ -33,13 +75,22 @@ def _numpy_to_python(obj):
     Returns:
         转换后的 Python 原生类型数据结构。
     """
+    # pandas 容器必须显式处理：DataFrame/Series 都不是 dict/list/ndarray，
+    # 若落到函数末尾的「兜底：按 dir() 展开公开属性」分支，会递归展开几十个
+    # pandas 属性（T、axes、values、index、columns …），呈组合爆炸且永不返回。
+    # 由于 XtdataSerializerMiddleware 串行化 /api/*，单个卡住的请求会连带锁死
+    # 整个 API 服务，因此这里必须先拦截。
+    if isinstance(obj, pd.DataFrame):
+        return _numpy_to_python(obj.reset_index().to_dict(orient="records"))
+    if isinstance(obj, pd.Series):
+        return _numpy_to_python(obj.to_dict())
     if isinstance(obj, dict):
         return {k: _numpy_to_python(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [_numpy_to_python(i) for i in obj]
     if isinstance(obj, float):
         # 处理 Python 原生 float 中的 NaN 和 Inf（JSON 不支持这些特殊值）
-        if obj != obj or obj == float("inf") or obj == float("-inf"):
+        if math.isnan(obj) or math.isinf(obj):
             return None
         return obj
     if isinstance(obj, np.ndarray):
@@ -51,7 +102,7 @@ def _numpy_to_python(obj):
     if isinstance(obj, (np.floating,)):
         # numpy 浮点类型（float16/float32/float64）转 Python float
         val = float(obj)
-        if val != val or val == float("inf") or val == float("-inf"):
+        if math.isnan(val) or math.isinf(val):
             return None
         return val
     if isinstance(obj, (np.bool_,)):
@@ -69,7 +120,11 @@ def _numpy_to_python(obj):
             if attrs:
                 return attrs
         except Exception:
-            pass
+            # 兜底转换失败不影响主流程（原样返回对象），但必须留痕，
+            # 否则「响应里出现奇怪结构」这类问题将无从查起。
+            logger.debug(
+                "属性兜底转换失败，原样返回 %s", type(obj).__name__, exc_info=True
+            )
     return obj
 
 
@@ -151,8 +206,16 @@ def _dataframe_dict_to_records(data: dict) -> dict[str, list[dict]]:
     result: dict[str, list[dict]] = {}
     for stock, df in data.items():
         if isinstance(df, pd.DataFrame) and not df.empty:
-            # reset_index() 将时间戳索引变为普通列，to_dict("records") 转为字典列表
-            records = df.reset_index().to_dict(orient="records")
+            # reset_index() 将时间戳索引变为普通列，to_dict("records") 转为字典列表。
+            # 但 xtdata.get_market_data3() 返回的 DataFrame 索引名本身就是 "time"，
+            # 且已存在同名的 "time" 列，直接 reset_index() 会抛
+            # ValueError: cannot insert time, already exists。此时列中已带时间信息，
+            # 丢掉冗余索引即可（保持与其他转换函数一致的 time 列形态）。
+            index_name = df.index.name if df.index.name is not None else "index"
+            if index_name in df.columns:
+                records = df.to_dict(orient="records")
+            else:
+                records = df.reset_index().to_dict(orient="records")
             # 对每条记录递归清洗 numpy 类型
             result[stock] = [_numpy_to_python(r) for r in records]
         else:

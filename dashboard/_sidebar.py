@@ -1,11 +1,46 @@
-"""共享侧边栏连接配置 — 所有页面 import 此模块以渲染连接 UI。"""
+"""共享侧边栏连接配置 — 所有页面 import 此模块以渲染连接 UI。
+
+同时是本仪表盘的日志入口：所有页面都会 import 本模块，日志配置放在这里
+只需要配一次。仪表盘原先的失败只弹 ``st.error``，浏览器关掉就再也查不到，
+``report_error()`` 让同一件事同时落到日志里（带堆栈）。
+"""
 
 import json
+import logging
+import os
 from pathlib import Path
 
 import streamlit as st
 
+from qmt_bridge.server.logging_setup import setup_logging
+
+# 与 API 服务共用同一套日志开关与格式：QMT_BRIDGE_LOG_LEVEL / QMT_BRIDGE_LOG_FILE
+# 不设 LOG_FILE 时只输出到控制台（streamlit run 的终端），不偷偷写文件。
+setup_logging(
+    level=os.environ.get("QMT_BRIDGE_LOG_LEVEL", "info"),
+    log_file=os.environ.get("QMT_BRIDGE_LOG_FILE", ""),
+)
+
+logger = logging.getLogger("qmt_bridge.dashboard")
+
 _CONFIG_PATH = Path(__file__).parent / ".dashboard_config.json"
+
+
+def report_error(message: str, exc: Exception, *, as_warning: bool = False) -> None:
+    """把页面里的失败同时写进日志并弹给用户。
+
+    仪表盘的每个 ``except`` 原先只做 ``st.error``，出问题事后无从追查；
+    统一走这里：日志里是一条带堆栈的 ERROR（有 request_id 时还能和服务端对上），
+    界面上仍是用户看得懂的一句话。
+
+    Args:
+        message: 给用户看的失败摘要，如 ``"查询失败"``。
+        exc: 捕获到的异常。
+        as_warning: 界面按 warning 展示（非致命失败，如首页概览拉取不到）。
+    """
+    # 用 exc_info=exc 而不是 True：这里不在 except 块内，显式带上传入的异常堆栈
+    logger.error("%s: %s", message, exc, exc_info=exc)
+    (st.warning if as_warning else st.error)(f"{message}: {exc}")
 
 
 def _load_config() -> dict:
@@ -50,6 +85,8 @@ def render_sidebar():
             st.sidebar.success("连接成功")
         except Exception as e:
             st.session_state["connected"] = False
+            # 堆栈由 exception() 自带，消息里不必再拼一次异常文本
+            logger.exception("连接失败")
             st.sidebar.error(f"连接失败: {e}")
 
     if st.session_state.get("connected"):

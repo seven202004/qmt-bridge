@@ -11,9 +11,85 @@
 所有方法签名严格对齐 xtquant.xttrader 的真实 API。
 """
 
+import functools
+import inspect
 import logging
+import random
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger("qmt_bridge.trading")
+
+# 审计日志里按参数名过滤敏感字段：名字里带这些片段的参数一律不入日志
+_SENSITIVE_FIELD_HINTS = ("pwd", "password", "secret", "key", "token")
+# 单个字段值的最大长度，超长只报类型与长度（deal_list / dict_param 可能很大）
+_MAX_FIELD_REPR = 120
+
+
+def _is_sensitive(field: str) -> bool:
+    """参数名是否属于敏感字段（银行密码、资金密码、密钥）。"""
+    lowered = field.lower()
+    return any(hint in lowered for hint in _SENSITIVE_FIELD_HINTS)
+
+
+def _format_value(value: Any) -> str:
+    """格式化单个字段值；超长容器不整段打印，只报类型与长度。"""
+    text = repr(value)
+    if len(text) <= _MAX_FIELD_REPR:
+        return text
+    try:
+        size = len(value)
+    except TypeError:
+        return text[:_MAX_FIELD_REPR] + "..."
+    return f"<{type(value).__name__} len={size}>"
+
+
+def _describe(fields: dict[str, Any]) -> str:
+    """把实参拼成一行 ``k=v``；敏感字段已在上游剔除。"""
+    return " ".join(f"{k}={_format_value(v)}" for k, v in fields.items()) or "-"
+
+
+def _bind_fields(func: Callable[..., Any], self: Any, args: tuple, kwargs: dict) -> dict[str, Any]:
+    """按被装饰方法的签名把实参绑定成「参数名 → 值」，敏感字段在此剔除。"""
+    try:
+        bound = inspect.signature(func).bind(self, *args, **kwargs)
+    except TypeError:
+        # 绑不上就宁可不记参数，也不能让日志把交易调用带崩
+        return {}
+    return {
+        name: value
+        for name, value in bound.arguments.items()
+        if name != "self" and not _is_sensitive(name)
+    }
+
+
+def _audited(action: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """给资金/持仓变动类方法加审计日志：成功记参数 + 返回码，失败记参数 + 堆栈。
+
+    参数从被装饰方法的签名自动取，新增参数不会漏记；名字命中
+    :data:`_SENSITIVE_FIELD_HINTS` 的字段永久跳过 —— 银行密码、资金密码绝不能
+    进日志，所以过滤放在装饰器里而不是各个调用点，避免新接口忘了脱敏。
+
+    Args:
+        action: 日志里的动作名，如 ``"同步下单"``。
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        @functools.wraps(func)
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            fields = _bind_fields(func, self, args, kwargs)
+            try:
+                result = func(self, *args, **kwargs)
+            except Exception:
+                # 失败路径也要带上参数：只知道「下单失败了」等于没有线索
+                logger.exception("交易失败 %s: %s", action, _describe(fields))
+                raise
+            logger.info("交易 %s: %s -> %r", action, _describe(fields), result)
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 class XtTraderManager:
@@ -30,8 +106,10 @@ class XtTraderManager:
     def __init__(self, mini_qmt_path: str = "", account_id: str = ""):
         self.mini_qmt_path = mini_qmt_path
         self.account_id = account_id
-        self._trader = None      # XtQuantTrader 实例，连接后赋值
-        self._account = None     # 默认 StockAccount 实例
+        # 类型标 Any：xtquant 没有 stub，具体类型 mypy 认不出来；
+        # 不标会被推断成 None，进而否定下面全部 self._trader.xxx() 调用。
+        self._trader: Any = None  # XtQuantTrader 实例，连接后赋值
+        self._account: Any = None  # 默认 StockAccount 实例
 
     def connect(self):
         """初始化并连接 XtQuantTrader 实例。"""
@@ -41,7 +119,10 @@ class XtTraderManager:
         from .callbacks import BridgeTraderCallback
 
         path = self.mini_qmt_path
-        session_id = hash(path) & 0xFFFF
+        # ponytail: 原 `hash(path)&0xFFFF` 是确定性固定值，broker 被强杀后残留 session
+        # 会占用该 id，导致下次 `connect()` 复用同一 session 被拒(-1)。
+        # 改为每次启动随机一个大整数，避免与残留/其它连接的 session 冲突。
+        session_id = random.randint(1, 0x7FFFFFFF)
 
         self._trader = XtQuantTrader(path, session_id)
         self._account = StockAccount(self.account_id)
@@ -91,6 +172,7 @@ class XtTraderManager:
     # 委托操作
     # ------------------------------------------------------------------
 
+    @_audited("同步下单")
     def order(self, stock_code: str, order_type: int, order_volume: int,
               price_type: int = 5, price: float = 0.0,
               strategy_name: str = "", order_remark: str = "",
@@ -102,6 +184,7 @@ class XtTraderManager:
             price_type, price, strategy_name, order_remark,
         )
 
+    @_audited("异步下单")
     def order_async(self, stock_code: str, order_type: int, order_volume: int,
                     price_type: int = 5, price: float = 0.0,
                     strategy_name: str = "", order_remark: str = "",
@@ -113,21 +196,25 @@ class XtTraderManager:
             price_type, price, strategy_name, order_remark,
         )
 
+    @_audited("同步撤单")
     def cancel_order(self, order_id: int, account_id: str = ""):
         """同步撤单 → _trader.cancel_order_stock()"""
         account = self._resolve_account(account_id)
         return self._trader.cancel_order_stock(account, order_id)
 
+    @_audited("异步撤单")
     def cancel_order_async(self, order_id: int, account_id: str = ""):
         """异步撤单 → _trader.cancel_order_stock_async()"""
         account = self._resolve_account(account_id)
         return self._trader.cancel_order_stock_async(account, order_id)
 
+    @_audited("按系统编号撤单")
     def cancel_order_stock_sysid(self, market: str, sysid: str, account_id: str = ""):
         """按系统编号同步撤单 → _trader.cancel_order_stock_sysid()"""
         account = self._resolve_account(account_id)
         return self._trader.cancel_order_stock_sysid(account, market, sysid)
 
+    @_audited("按系统编号异步撤单")
     def cancel_order_stock_sysid_async(self, market: str, sysid: str, account_id: str = ""):
         """按系统编号异步撤单 → _trader.cancel_order_stock_sysid_async()"""
         account = self._resolve_account(account_id)
@@ -183,19 +270,15 @@ class XtTraderManager:
         return None
 
     def query_single_position(self, stock_code: str, account_id: str = ""):
-        """查询单只股票持仓（遍历 query_stock_positions 过滤）。"""
+        """查询单只股票持仓 → _trader.query_stock_position()"""
         account = self._resolve_account(account_id)
-        positions = self._trader.query_stock_positions(account)
-        if positions:
-            for p in positions:
-                if getattr(p, "stock_code", None) == stock_code:
-                    return p
-        return None
+        return self._trader.query_stock_position(account, stock_code)
 
     # ------------------------------------------------------------------
     # 信用交易操作（融资融券）
     # ------------------------------------------------------------------
 
+    @_audited("信用下单")
     def credit_order(self, stock_code: str, order_type: int, order_volume: int,
                      price_type: int = 5, price: float = 0.0,
                      strategy_name: str = "", order_remark: str = "",
@@ -206,6 +289,26 @@ class XtTraderManager:
             account, stock_code, order_type, order_volume,
             price_type, price, strategy_name, order_remark,
         )
+
+    @_audited("信用撤单")
+    def cancel_credit_order(self, order_id: int, account_id: str = ""):
+        """信用账户撤单 → _trader.cancel_order_stock()
+
+        与委托查询同理：账户对象必须按 CREDIT 解析。拿普通账户口径去撤，撤的是
+        **另一个账号**的委托，返回码还可能是成功——静默撤错单，比失败更糟。
+        """
+        account = self._resolve_account(account_id, account_type="CREDIT")
+        return self._trader.cancel_order_stock(account, order_id)
+
+    def query_credit_orders(self, account_id: str = "", cancelable_only: bool = False):
+        """查询信用账户当日委托 → _trader.query_stock_orders()
+
+        委托查询与普通账户用同一个 xttrader API，但**账户对象必须按 CREDIT 解析**：
+        拿普通账户口径去查，返回的是另一个账号的委托，静默给出错误答案——风控据此
+        对账/撤单会打偏。
+        """
+        account = self._resolve_account(account_id, account_type="CREDIT")
+        return self._trader.query_stock_orders(account, cancelable_only)
 
     def query_credit_positions(self, account_id: str = ""):
         """查询信用账户持仓 → _trader.query_stock_positions()"""
@@ -241,6 +344,7 @@ class XtTraderManager:
     # 资金划转
     # ------------------------------------------------------------------
 
+    @_audited("资金划转")
     def fund_transfer(self, transfer_direction: int, amount: float, account_id: str = ""):
         """资金划转 → _trader.fund_transfer()"""
         account = self._resolve_account(account_id)
@@ -250,6 +354,7 @@ class XtTraderManager:
     # 银证转账（完整实现，对齐 xttrader 真实 API）
     # ------------------------------------------------------------------
 
+    @_audited("银行转证券")
     def bank_transfer_in(self, bank_no: str, bank_account: str, balance: float,
                          bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
         """银行转证券 → _trader.bank_transfer_in()"""
@@ -258,6 +363,7 @@ class XtTraderManager:
             account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
         )
 
+    @_audited("证券转银行")
     def bank_transfer_out(self, bank_no: str, bank_account: str, balance: float,
                           bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
         """证券转银行 → _trader.bank_transfer_out()"""
@@ -266,6 +372,7 @@ class XtTraderManager:
             account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
         )
 
+    @_audited("异步银行转证券")
     def bank_transfer_in_async(self, bank_no: str, bank_account: str, balance: float,
                                bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
         """异步银行转证券 → _trader.bank_transfer_in_async()"""
@@ -274,6 +381,7 @@ class XtTraderManager:
             account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
         )
 
+    @_audited("异步证券转银行")
     def bank_transfer_out_async(self, bank_no: str, bank_account: str, balance: float,
                                 bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
         """异步证券转银行 → _trader.bank_transfer_out_async()"""
@@ -324,6 +432,7 @@ class XtTraderManager:
     # 证券划转
     # ------------------------------------------------------------------
 
+    @_audited("证券划转")
     def secu_transfer(self, transfer_direction: int, stock_code: str, volume: int,
                       transfer_type: int, account_id: str = ""):
         """证券划转 → _trader.secu_transfer()"""
@@ -351,6 +460,7 @@ class XtTraderManager:
         account = self._resolve_account(account_id)
         return self._trader.smt_query_order(account)
 
+    @_audited("SMT 协商下单")
     def smt_negotiate_order_async(self, src_group_id: str, order_code: str,
                                   date: str, amount: float, apply_rate: float,
                                   dict_param: dict | None = None,
@@ -362,6 +472,7 @@ class XtTraderManager:
             dict_param or {},
         )
 
+    @_audited("SMT 预约委托")
     def smt_appointment_order_async(self, order_code: str, date: str,
                                     amount: float, apply_rate: float,
                                     account_id: str = ""):
@@ -371,11 +482,13 @@ class XtTraderManager:
             account, order_code, date, amount, apply_rate,
         )
 
+    @_audited("SMT 取消预约")
     def smt_appointment_cancel_async(self, apply_id: str, account_id: str = ""):
         """异步取消 SMT 预约 → _trader.smt_appointment_cancel_async()"""
         account = self._resolve_account(account_id)
         return self._trader.smt_appointment_cancel_async(account, apply_id)
 
+    @_audited("SMT 合约展期")
     def smt_compact_renewal_async(self, cash_compact_id: str, order_code: str,
                                   defer_days: int, defer_num: int,
                                   apply_rate: float, account_id: str = ""):
@@ -385,6 +498,7 @@ class XtTraderManager:
             account, cash_compact_id, order_code, defer_days, defer_num, apply_rate,
         )
 
+    @_audited("SMT 合约归还")
     def smt_compact_return_async(self, src_group_id: str, cash_compact_id: str,
                                  order_code: str, occur_amount: float,
                                  account_id: str = ""):
@@ -415,7 +529,7 @@ class XtTraderManager:
         """获取账户连接状态（本地判断）。"""
         try:
             return {"connected": self._trader is not None}
-        except Exception:
+        except Exception:  # noqa: BLE001 — 状态查询不能反把接口弄挂，一律视为未连接
             return {"connected": False}
 
     def query_account_status(self):
@@ -449,6 +563,7 @@ class XtTraderManager:
     # 数据导出与外部同步（对齐 xttrader 真实签名）
     # ------------------------------------------------------------------
 
+    @_audited("导出交易数据")
     def export_data(self, result_path: str, data_type: str,
                     start_time: str = "", end_time: str = "",
                     user_param: str = "", account_id: str = ""):
@@ -467,6 +582,7 @@ class XtTraderManager:
             account, result_path, data_type, start_time, end_time, user_param,
         )
 
+    @_audited("外部同步交易记录")
     def sync_transaction_from_external(self, operation: str, data_type: str,
                                        deal_list: list, account_id: str = ""):
         """从外部同步交易记录 → _trader.sync_transaction_from_external()"""
@@ -474,3 +590,58 @@ class XtTraderManager:
         return self._trader.sync_transaction_from_external(
             operation, data_type, account, deal_list,
         )
+
+    # ------------------------------------------------------------------
+    # 算法交易
+    # ------------------------------------------------------------------
+
+    @_audited("算法下单")
+    def smart_algo_order_async(self, stock_code: str, order_type: int, order_volume: int,
+                               price_type: int, price: float, algo_name: str,
+                               start_time: str = "", end_time: str = "",
+                               algo_param: dict | None = None,
+                               strategy_name: str = "", order_remark: str = "",
+                               account_id: str = ""):
+        """算法交易异步下单 → _trader.smart_algo_order_async()
+
+        Args:
+            stock_code: 证券代码，如 ``"600000.SH"``。
+            order_type: 委托类型，23 买入 / 24 卖出。
+            order_volume: 委托数量。
+            price_type: 报价类型。
+            price: 委托价格，市价类报价传 0。
+            algo_name: 算法名称，可用 ``get_smart_algo_param()`` 查询。
+            start_time: 算法执行起始时间，格式 ``"HH:MM:SS"``（如 ``"09:30:00"``）。
+                xtquant 会与**当天日期**组合成时间戳，因此只能指定当日时段，
+                传带日期的字符串会被判为格式错误。
+            end_time: 算法执行截止时间，同样为 ``"HH:MM:SS"``，必须晚于 start_time，
+                否则 xtquant 抛 ``Exception("起始时间小于截止时间")``。
+            algo_param: 算法参数字典。
+            strategy_name: 策略名称。
+            order_remark: 委托备注。
+            account_id: 资金账号，空则用默认账户。
+
+        Returns:
+            异步请求序号，最终结果由 ``on_smart_algo_order_async_response`` 推送。
+        """
+        account = self._resolve_account(account_id)
+        return self._trader.smart_algo_order_async(
+            account, stock_code, order_type, order_volume,
+            price_type, price, strategy_name, order_remark,
+            algo_name, start_time, end_time, algo_param or {},
+        )
+
+    @_audited("撤销算法任务")
+    def cancel_smart_algo_task_async(self, task_id: int, account_id: str = ""):
+        """撤销算法交易任务 → _trader.cancel_smart_algo_task_async()"""
+        account = self._resolve_account(account_id)
+        return self._trader.cancel_smart_algo_task_async(account, task_id)
+
+    def query_smart_algo_task(self, account_id: str = ""):
+        """查询当日算法交易任务 → _trader.query_smart_algo_task()"""
+        account = self._resolve_account(account_id)
+        return self._trader.query_smart_algo_task(account)
+
+    def get_smart_algo_param(self, algo_name_list: list[str]):
+        """查询算法参数说明 → _trader.get_smart_algo_param()"""
+        return self._trader.get_smart_algo_param(algo_name_list)

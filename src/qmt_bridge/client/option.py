@@ -5,12 +5,13 @@
 - 期权链（T 型报价）
 - 期权列表筛选
 
-底层对应 xtquant 的 ``xtdata.get_option_detail()``、
-``xtdata.get_option_chain()``、``xtdata.get_option_list()`` 等函数。
+底层对应 xtquant 的 ``xtdata.get_option_detail_data()``、
+``xtdata.get_option_undl_data()``、``xtdata.get_option_list()`` 等函数。
 """
+from .base import BaseClient
 
 
-class OptionMixin:
+class OptionMixin(BaseClient):
     """期权数据客户端方法集合，对应 /api/option/* 端点。"""
 
     def get_option_detail(self, option_code: str) -> dict:
@@ -75,7 +76,7 @@ class OptionMixin:
     def get_history_option_list(self, undl_code: str, dedate: str) -> list:
         """获取历史期权合约列表（含已到期合约）。
 
-        底层调用 ``xtdata.get_history_option_list()``，返回包括已到期
+        底层调用 ``xtdata.get_his_option_list()``，返回包括已到期
         合约在内的历史期权列表，适合期权历史数据分析。
 
         Args:
@@ -90,3 +91,4 @@ class OptionMixin:
             "dedate": dedate,
         })
         return resp.get("data", [])
+

@@ -246,6 +246,75 @@ class BridgeTraderCallback:
             },
         })
 
+    def on_bank_transfer_async_response(self, response):
+        """银证转账异步响应回调。
+
+        当 ``bank_transfer_in_async`` / ``bank_transfer_out_async`` 得到柜台响应时触发。
+        缺少本回调会导致这两个异步接口的返回值（seq）永远拿不到最终结果。
+
+        Args:
+            response: XtBankTransferResponse 对象，含 seq / success / msg。
+        """
+        logger.info("on_bank_transfer_async_response: %s", _bank_transfer_response_to_dict(response))
+        self._dispatch({
+            "type": "bank_transfer_response",
+            "data": _bank_transfer_response_to_dict(response),
+        })
+
+    def on_ctp_internal_transfer_async_response(self, response):
+        """期货内部划转异步响应回调。
+
+        xtquant 在 CTP 跨市场资金划转请求得到柜台响应时触发本回调
+        （对应 ``XtQuantTrader.ctp_transfer_*_async``）。返回值结构同为
+        XtBankTransferResponse；本桥接暂未暴露该划转端点，保留回调以避免
+        xtquant 在推送线程中调用缺失方法。
+
+        Args:
+            response: XtBankTransferResponse 对象，含 seq / success / msg。
+        """
+        logger.info(
+            "on_ctp_internal_transfer_async_response: %s",
+            _bank_transfer_response_to_dict(response),
+        )
+        self._dispatch({
+            "type": "ctp_transfer_response",
+            "data": _bank_transfer_response_to_dict(response),
+        })
+
+    def on_smart_algo_order_async_response(self, response):
+        """算法交易异步下单回报回调。
+
+        当 ``smart_algo_order_async`` 请求得到柜台响应时触发。
+
+        Args:
+            response: XtSmartAlgoOrderResponse 对象，含 task_id / error_msg / seq。
+        """
+        logger.info(
+            "on_smart_algo_order_async_response: %s",
+            _smart_algo_order_response_to_dict(response),
+        )
+        self._dispatch({
+            "type": "smart_algo_response",
+            "data": _smart_algo_order_response_to_dict(response),
+        })
+
+    def on_operate_smart_task_async_response(self, response):
+        """算法交易任务操作异步回报回调。
+
+        当 ``cancel_smart_algo_task_async`` 等任务操作得到柜台响应时触发。
+
+        Args:
+            response: XtOperateSmartTaskResponse 对象，含 task_id / success / error_msg。
+        """
+        logger.info(
+            "on_operate_smart_task_async_response: %s",
+            _smart_task_response_to_dict(response),
+        )
+        self._dispatch({
+            "type": "smart_task_response",
+            "data": _smart_task_response_to_dict(response),
+        })
+
 
 # ------------------------------------------------------------------
 # 辅助转换函数 — 将 xtquant 对象转为可 JSON 序列化的字典
@@ -332,3 +401,28 @@ def _position_to_dict(position) -> dict:
         "frozen_volume", "open_price", "market_value",
     ]
     return {a: getattr(position, a, None) for a in attrs}
+
+
+def _bank_transfer_response_to_dict(response) -> dict:
+    """将 XtBankTransferResponse 划转响应对象转换为普通字典。
+
+    Args:
+        response: xtquant 返回的异步划转响应对象。
+
+    Returns:
+        包含 seq / success / msg 的字典。
+    """
+    attrs = ["seq", "success", "msg"]
+    return {a: getattr(response, a, None) for a in attrs}
+
+
+def _smart_algo_order_response_to_dict(response) -> dict:
+    """将 XtSmartAlgoOrderResponse 算法下单回报转换为普通字典。"""
+    attrs = ["account_id", "task_id", "strategy_name", "order_remark", "error_msg", "seq"]
+    return {a: getattr(response, a, None) for a in attrs}
+
+
+def _smart_task_response_to_dict(response) -> dict:
+    """将 XtOperateSmartTaskResponse 算法任务操作回报转换为普通字典。"""
+    attrs = ["seq", "success", "task_id", "operate_reason", "error_msg"]
+    return {a: getattr(response, a, None) for a in attrs}

@@ -15,7 +15,10 @@ BSON 断言崩溃。
 
 import argparse
 import os
+import sys
+from pathlib import Path
 
+from .._version import __version__
 from .config import Settings, _load_env_file, reset_settings
 
 
@@ -93,30 +96,36 @@ def main():
 
     args = parser.parse_args()
 
-    # 用命令行参数构建 Settings 对象（覆盖环境变量中的默认值）
-    settings = Settings(
-        host=args.host,
-        port=args.port,
-        log_level=args.log_level,
-        workers=args.workers,
-        api_key=args.api_key,
-        trading_enabled=args.trading,
-        mini_qmt_path=args.mini_qmt_path,
-        trading_account_id=args.account_id,
-    )
+    # 以 .env / 环境变量为基底，再用命令行参数覆盖：直接 Settings(...) 构造会把
+    # .env 里的日志配置（QMT_BRIDGE_LOG_FILE / LOG_ACCESS ...）、通知配置、
+    # QMT_BRIDGE_REQUIRE_AUTH_FOR_DATA 全部丢掉 —— 落盘日志根本开不起来。
+    settings = Settings.from_env()
+    settings.host = args.host
+    settings.port = args.port
+    settings.log_level = args.log_level
+    settings.workers = args.workers
+    settings.api_key = args.api_key
+    settings.trading_enabled = args.trading
+    settings.mini_qmt_path = args.mini_qmt_path
+    settings.trading_account_id = args.account_id
     # 将配置对象设置为全局单例，供后续模块通过 get_settings() 获取
     reset_settings(settings)
 
-    # 为应用自身的 logger 配置 handler，使 qmt_bridge.* 的日志能输出到控制台。
-    # Uvicorn 只配置 uvicorn.* 系列 logger，不会影响应用自定义的 logger。
-    import logging
+    # 统一日志配置（控制台 + 可选轮转文件）。Uvicorn 只配置 uvicorn.* 系列 logger，
+    # 不会影响应用自定义的 logger，因此这里必须自行配置。
+    from .logging_setup import setup_logging
 
-    app_logger = logging.getLogger("qmt_bridge")
-    app_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
-    if not app_logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
-        app_logger.addHandler(handler)
+    logger = setup_logging(
+        level=settings.log_level,
+        log_file=settings.log_file,
+        max_bytes=settings.log_max_bytes,
+        backup_count=settings.log_backup_count,
+    )
+    # 进程级启动记录：日志文件里据此判断「服务什么时候起的、哪个版本、哪个进程」
+    logger.info(
+        "qmt-server v%s 启动 (pid=%d, python=%s, cwd=%s)",
+        __version__, os.getpid(), sys.version.split()[0], Path.cwd(),
+    )
 
     import uvicorn
 
@@ -131,8 +140,16 @@ def main():
         port=settings.port,
         log_level=settings.log_level,
         workers=settings.workers,
+        # 访问日志由 AccessLogMiddleware 输出（带 request_id / 耗时 / 状态码），
+        # 关掉 uvicorn 自带的以免每条请求打两行。
+        access_log=False,
+        # 不让 uvicorn 跑 dictConfig：否则它会用自己的 handler 覆盖掉
+        # setup_logging 刚给 uvicorn.* 挂上的 handler，启动横幅又只留在控制台。
+        log_config=None,
         timeout_graceful_shutdown=3,
     )
+    # uvicorn.run 在收到 Ctrl+C 完成优雅关闭后正常返回
+    logger.info("qmt-server 已退出")
 
 
 def scheduler_main():
@@ -162,16 +179,22 @@ def scheduler_main():
     args = parser.parse_args()
 
     import asyncio
-    import logging
-
-    app_logger = logging.getLogger("qmt_bridge")
-    app_logger.setLevel(getattr(logging, args.log_level.upper(), logging.INFO))
-    if not app_logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
-        app_logger.addHandler(handler)
 
     settings = Settings.from_env()
+
+    # 调度器与 API 服务共用同一套日志配置，格式/落盘位置保持一致
+    from .logging_setup import setup_logging
+
+    app_logger = setup_logging(
+        level=args.log_level,
+        log_file=settings.log_file,
+        max_bytes=settings.log_max_bytes,
+        backup_count=settings.log_backup_count,
+    )
+    app_logger.info(
+        "qmt-scheduler v%s 启动 (pid=%d, python=%s)",
+        __version__, os.getpid(), sys.version.split()[0],
+    )
 
     from .downloader import DownloadSchedulerState
     from .scheduler import scheduler_loop
@@ -179,7 +202,7 @@ def scheduler_main():
     state = DownloadSchedulerState()
 
     app_logger.info(
-        "调度器独立进程启动 (K线=%s 周期=%s, 财务=%s)",
+        "调度配置: K线=%s 周期=%s, 财务=%s",
         settings.scheduler_kline_enabled,
         settings.scheduler_kline_periods,
         settings.scheduler_financial_enabled,

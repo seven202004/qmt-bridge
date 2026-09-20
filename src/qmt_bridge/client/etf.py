@@ -4,9 +4,10 @@
 
 底层对应 xtquant 的 ETF 信息查询功能。
 """
+from .base import BaseClient
 
 
-class ETFMixin:
+class ETFMixin(BaseClient):
     """ETF 数据客户端方法集合，对应 /api/etf/* 端点。"""
 
     def get_etf_list(self) -> list[str]:

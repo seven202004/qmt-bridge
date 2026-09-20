@@ -15,6 +15,8 @@ from ..models import (
     ExportDataRequest,
     OrderRequest,
     QueryDataRequest,
+    SmartAlgoOrderRequest,
+    SmartAlgoTaskCancelRequest,
     SyncTransactionRequest,
 )
 from ..security import require_api_key
@@ -349,3 +351,67 @@ def sync_transaction(req: SyncTransactionRequest, manager=Depends(get_trader_man
         account_id=req.account_id,
     )
     return ok_response(_numpy_to_python(result))
+
+
+# ------------------------------------------------------------------
+# 算法交易（对齐 xttrader 算法交易接口）
+# ------------------------------------------------------------------
+
+
+@router.post("/smart_algo_order_async")
+def smart_algo_order_async(req: SmartAlgoOrderRequest, manager=Depends(get_trader_manager)):
+    """算法交易异步下单 → manager.smart_algo_order_async()
+
+    返回异步序号，最终结果通过 ``/ws/trade`` 的 ``smart_algo_response`` 事件推送。
+    """
+    result = manager.smart_algo_order_async(
+        stock_code=req.stock_code,
+        order_type=req.order_type,
+        order_volume=req.order_volume,
+        price_type=req.price_type,
+        price=req.price,
+        algo_name=req.algo_name,
+        start_time=req.start_time,
+        end_time=req.end_time,
+        algo_param=req.algo_param,
+        strategy_name=req.strategy_name,
+        order_remark=req.order_remark,
+        account_id=req.account_id,
+    )
+    return {"seq": result, "status": "async_submitted"}
+
+
+@router.post("/smart_algo_task_cancel_async")
+def cancel_smart_algo_task_async(
+    req: SmartAlgoTaskCancelRequest, manager=Depends(get_trader_manager)
+):
+    """撤销算法交易任务 → manager.cancel_smart_algo_task_async()
+
+    返回异步序号，最终结果通过 ``/ws/trade`` 的 ``smart_task_response`` 事件推送。
+    """
+    result = manager.cancel_smart_algo_task_async(
+        task_id=req.task_id,
+        account_id=req.account_id,
+    )
+    return {"seq": result, "status": "async_submitted"}
+
+
+@router.get("/smart_algo_task")
+def query_smart_algo_task(
+    account_id: str = Query("", description="交易账户 ID"),
+    manager=Depends(get_trader_manager),
+):
+    """查询当日算法交易任务 → manager.query_smart_algo_task()"""
+    result = manager.query_smart_algo_task(account_id=account_id)
+    return {"data": _numpy_to_python(result)}
+
+
+@router.get("/smart_algo_param")
+def get_smart_algo_param(
+    algo_names: str = Query(..., description="算法名称列表，逗号分隔"),
+    manager=Depends(get_trader_manager),
+):
+    """查询算法参数说明 → manager.get_smart_algo_param()"""
+    algo_name_list = [n.strip() for n in algo_names.split(",") if n.strip()]
+    result = manager.get_smart_algo_param(algo_name_list=algo_name_list)
+    return {"data": _numpy_to_python(result)}

@@ -19,20 +19,24 @@
 一轮，之后每 24 小时定时刷新，客户端通常无需手动调用。
 """
 
+import logging
+
 from fastapi import APIRouter
 from xtquant import xtdata
 
 from ..downloader import download_history_data2_safe
 from ..helpers import _numpy_to_python
+from ..logging_setup import summarize_codes
 from ..models import (
     BatchDownloadRequest,
     FinancialDownload2Request,
     FinancialDownloadRequest,
-    HisSTDataDownloadRequest,
     TabularDataDownloadRequest,
 )
 
 router = APIRouter(prefix="/api/download", tags=["download"])
+
+logger = logging.getLogger("qmt_bridge.download")
 
 
 @router.post("/history_data2")
@@ -56,6 +60,12 @@ def download_history_data2(req: BatchDownloadRequest):
 
     底层调用: downloader.download_history_data2_safe() — 逐只下载，绕过 xtquant bug。
     """
+    # 下载会长时间占用 xtdata 串行化锁（期间整个 /api 排队），必须记下"请求了什么"
+    logger.info(
+        "下载请求 历史行情: 周期=%s 区间=%s~%s 股票=%d只 %s",
+        req.period, req.start_time or "最早", req.end_time or "最新",
+        len(req.stock_list), summarize_codes(req.stock_list),
+    )
     result = download_history_data2_safe(
         req.stock_list,
         period=req.period,
@@ -89,6 +99,11 @@ def download_financial_data(req: FinancialDownloadRequest):
 
     底层调用: xtdata.download_financial_data(stock_list, table_list=..., ...)
     """
+    logger.info(
+        "下载请求 财务数据: 报表=%s 区间=%s~%s 股票=%d只 %s",
+        req.table_list or "全部", req.start_time or "最早", req.end_time or "最新",
+        len(req.stock_list), summarize_codes(req.stock_list),
+    )
     xtdata.download_financial_data(
         req.stock_list,
         table_list=req.table_list,
@@ -216,6 +231,10 @@ def download_financial_data2(req: FinancialDownload2Request):
 
     底层调用: xtdata.download_financial_data2(stock_list, table_list=...)
     """
+    logger.info(
+        "下载请求 财务数据v2(阻塞): 报表=%s 股票=%d只 %s",
+        req.table_list or "全部", len(req.stock_list), summarize_codes(req.stock_list),
+    )
     xtdata.download_financial_data2(
         req.stock_list,
         table_list=req.table_list,
@@ -267,33 +286,21 @@ def download_holiday_data():
 
 
 @router.post("/his_st_data")
-def download_his_st_data(req: HisSTDataDownloadRequest):
+def download_his_st_data():
     """下载历史 ST 数据。
 
-    下载指定股票在时间范围内的历史 ST（特别处理）标记数据到服务端本地。
-    此接口为异步操作，下载任务在服务端后台执行。
-
-    Args:
-        req.stock_list: 股票代码列表，如 ``["000001.SZ", "600519.SH"]``。
-        req.period: K 线周期，如 ``"1d"``/``"1m"``/``"5m"``。
-        req.start_time: 开始时间，格式 ``"20230101"``。
-        req.end_time: 结束时间，格式同上。
+    xtquant 真实接口不接受任何参数，固定全量下载并写入本地缓存。
+    此接口为异步触发，实际下载在后台执行。
 
     Returns:
-        stocks: 请求的股票代码列表。
-        result: 下载结果详情。
+        status: 固定为 "ok"。
+        result: 下载结果。
 
-    底层调用: xtdata.download_his_st_data(stock_list, period=..., ...)
+    底层调用: xtdata.download_his_st_data()
     """
-    result = xtdata.download_his_st_data(
-        req.stock_list,
-        period=req.period,
-        start_time=req.start_time,
-        end_time=req.end_time,
-    )
+    result = xtdata.download_his_st_data()
     return {
         "status": "ok",
-        "stocks": req.stock_list,
         "result": _numpy_to_python(result) if result else {},
     }
 
@@ -302,20 +309,34 @@ def download_his_st_data(req: HisSTDataDownloadRequest):
 def download_tabular_data(req: TabularDataDownloadRequest):
     """下载表格数据。
 
-    下载指定表名的表格数据到服务端本地。此接口为同步阻塞操作。
+    下载指定股票、指定周期与时间范围内的表格数据到本地缓存。
 
     Args:
-        req.table_list: 需要下载的表名列表。
+        req.stock_list: 股票代码列表，如 ``["000001.SZ"]``。
+        req.period: K 线周期，如 ``"1d"``。
+        req.start_time: 开始时间，格式 ``"20230101"``。
+        req.end_time: 结束时间，格式同 ``start_time``。
 
     Returns:
-        tables: 请求的表名列表。
-        result: 下载结果详情。
+        stocks: 请求下载的股票代码列表。
+        result: 下载结果。
 
-    底层调用: xtdata.download_tabular_data(table_list)
+    底层调用: xtdata.download_tabular_data(stock_list, period, start_time='',
+        end_time='', incrementally=None, download_type='validationbypage', source='')
     """
-    result = xtdata.download_tabular_data(req.table_list)
+    logger.info(
+        "下载请求 表格数据: 周期=%s 区间=%s~%s 股票=%d只 %s",
+        req.period, req.start_time or "最早", req.end_time or "最新",
+        len(req.stock_list), summarize_codes(req.stock_list),
+    )
+    result = xtdata.download_tabular_data(
+        req.stock_list,
+        req.period,
+        start_time=req.start_time,
+        end_time=req.end_time,
+    )
     return {
         "status": "ok",
-        "tables": req.table_list,
+        "stocks": req.stock_list,
         "result": _numpy_to_python(result) if result else {},
     }

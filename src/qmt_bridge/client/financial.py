@@ -15,9 +15,10 @@
     - ``"Top10flowholder"``: 十大流通股东表
     - ``"Pershareindex"``: 每股指标表
 """
+from .base import BaseClient
 
 
-class FinancialMixin:
+class FinancialMixin(BaseClient):
     """财务数据客户端方法集合，对应 /api/financial/* 端点。"""
 
     def get_financial_data(

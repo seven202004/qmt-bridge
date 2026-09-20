@@ -7,9 +7,10 @@
 注意: 使用前需先调用 ``download_metatable_data()`` 下载合约元数据表，
 否则无法正确识别期货品种和合约。
 """
+from .base import BaseClient
 
 
-class FuturesMixin:
+class FuturesMixin(BaseClient):
     """期货数据客户端方法集合，对应 /api/futures/* 端点。"""
 
     def get_main_contract(

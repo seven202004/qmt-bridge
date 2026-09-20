@@ -9,9 +9,10 @@
 底层对应 xtquant 的 ``xtdata.get_trading_dates()``、
 ``xtdata.get_holidays()``、``xtdata.get_trading_calendar()`` 等函数。
 """
+from .base import BaseClient
 
 
-class CalendarMixin:
+class CalendarMixin(BaseClient):
     """交易日历客户端方法集合，对应 /api/calendar/* 端点。"""
 
     def get_trading_dates(

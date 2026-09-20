@@ -34,6 +34,9 @@ server = [
     "uvicorn[standard]>=0.20",
     "pandas>=1.5",
     "numpy>=1.23",
+    # xtdata.get_sector_info() / metatable 走 pyarrow.feather 读写
+    # （xtdata.py 内部 `from pyarrow import feather`），缺失会让 /api/sector/info 等端点 500
+    "pyarrow>=14",
 ]
 pandas = ["pandas>=1.5"]
 ws = ["websockets>=11.0"]
@@ -71,3 +74,35 @@ packages = ["src/qmt_bridge"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/qmt_bridge", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.mypy]
+# xtquant / bson 随 miniQMT 客户端分发（PyPI 上没有，也没有 stub），
+# httpx 只在通知模块按需导入，pandas 无 stub。
+# 这些"找不到实现/缺 stub"的噪音会把真正的类型错误淹掉，统一忽略。
+[[tool.mypy.overrides]]
+module = ["xtquant", "xtquant.*", "bson", "httpx", "pandas"]
+ignore_missing_imports = true
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI 的依赖注入就写在默认参数里（Depends/Security/Query…），B008 在此全是误报。
+# 列在 extend-immutable-calls 里 = 告诉 ruff「这些调用是常量，不是每次调用重新求值」。
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+    "fastapi.Security",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 行情时间戳统一是 A 股本地 naive 时间（xtdata 返回的日期字符串也是这个口径），
+# 改成 tz-aware 反而与 xtdata 互操作对不上，所以只在本文件豁免 DTZ。
+"src/qmt_bridge/server/downloader.py" = ["DTZ005", "DTZ006", "DTZ007"]
+# 仪表盘每个交互按钮都要"失败也留在页面上"：异常类型无从穷举（客户端/数据解析/
+# 界面），统一由 _sidebar.report_error() 记录并展示，所以这里豁免盲 except。
+# DTZ011 同理：日期选择器的默认值就是本地日历日，不需要时区。
+"dashboard/**" = ["BLE001", "DTZ011"]

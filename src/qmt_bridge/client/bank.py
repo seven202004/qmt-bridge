@@ -8,9 +8,10 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的银证转账方法。
 """
+from .base import BaseClient
 
 
-class BankMixin:
+class BankMixin(BaseClient):
     """银证转账客户端方法集合，对应 /api/bank/* 端点。"""
 
     def bank_transfer_in(

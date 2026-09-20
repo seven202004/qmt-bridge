@@ -23,9 +23,10 @@
     - ``download_etf_info()``          — ETF 申赎信息
     - ``download_cb_data()``           — 可转债数据
 """
+from .base import BaseClient
 
 
-class DownloadMixin:
+class DownloadMixin(BaseClient):
     """数据下载客户端方法集合，对应 /api/download/* 端点。"""
 
     def download_batch(
@@ -183,46 +184,41 @@ class DownloadMixin:
         """
         return self._post("/api/download/holiday_data", {})
 
-    def download_his_st_data(
+    def download_his_st_data(self) -> dict:
+        """下载历史 ST 数据。
+
+        底层调用 ``xtdata.download_his_st_data()``，xtquant 真实接口不接受参数，
+        固定全量下载并写入本地缓存。
+
+        Returns:
+            下载结果信息
+        """
+        return self._post("/api/download/his_st_data", {})
+
+    def download_tabular_data(
         self,
         stocks: list[str],
         period: str = "1d",
         start_time: str = "",
         end_time: str = "",
     ) -> dict:
-        """下载历史 ST 数据。
-
-        底层调用 ``xtdata.download_his_st_data()``，下载指定股票在时间范围内的
-        历史 ST（特别处理）标记数据到服务端本地。
-
-        Args:
-            stocks: 股票代码列表，如 ``["000001.SZ", "600519.SH"]``
-            period: K 线周期，如 ``"1d"``/``"1m"``/``"5m"``
-            start_time: 开始时间，格式 ``"20230101"``
-            end_time: 结束时间，格式同上
-
-        Returns:
-            下载结果信息
-        """
-        return self._post("/api/download/his_st_data", {
-            "stock_list": stocks,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
-
-    def download_tabular_data(self, tables: list[str]) -> dict:
         """下载表格数据。
 
-        底层调用 ``xtdata.download_tabular_data()``，下载指定表名的表格数据
-        到服务端本地。此方法为同步阻塞操作，会等待下载完成后返回。
+        底层调用 ``xtdata.download_tabular_data(stock_list, period, ...)``，下载
+        指定股票、周期与时间范围的表格数据到本地缓存。
 
         Args:
-            tables: 需要下载的表名列表
+            stocks: 股票代码列表，如 ``["000001.SZ"]``
+            period: K 线周期，如 ``"1d"``
+            start_time: 开始时间，格式 ``"20230101"``
+            end_time: 结束时间，格式同 ``start_time``
 
         Returns:
             下载结果信息
         """
         return self._post("/api/download/tabular_data", {
-            "table_list": tables,
+            "stocks": stocks,
+            "period": period,
+            "start_time": start_time,
+            "end_time": end_time,
         })

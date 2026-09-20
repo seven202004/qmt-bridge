@@ -122,12 +122,15 @@ def get_full_tick(
 
 
 @router.get("/api/sector_stocks")
-def get_sector_stocks(
+def get_sector_stocks_legacy(
     sector: str = Query(..., description="板块名称，如 沪深A股"),
 ):
     """[旧版] 获取板块成分股。
 
     建议使用新版 /api/sector/stocks 替代。
+
+    函数名带 ``_legacy`` 后缀：新版 ``sector.get_sector_stocks`` 与本端点的
+    路径规范化后相同，会导致 OpenAPI operationId 重复。
 
     Args:
         sector: 板块名称。

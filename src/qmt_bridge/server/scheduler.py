@@ -100,7 +100,7 @@ async def _run_kline_incremental(
         state.set_running(task_key, True)
         try:
             result = await loop.run_in_executor(
-                None, lambda p=period: download_kline_incremental(stocks, p),
+                None, functools.partial(download_kline_incremental, stocks, period),
             )
             state.set_result(task_key, asdict(result))
         except Exception:

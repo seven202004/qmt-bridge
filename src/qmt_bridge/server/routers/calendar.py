@@ -102,7 +102,6 @@ def get_trading_period(
     return {"stock": stock, "periods": _numpy_to_python(raw)}
 
 
-# ---------------------------------------------------------------------------
 # 扩展交易日历端点
 # ---------------------------------------------------------------------------
 
@@ -204,5 +203,3 @@ def get_trading_dates_count(
     raw = xtdata.get_trading_dates(market, start_time=start_time, end_time=end_time)
     dates = _numpy_to_python(raw)
     return {"market": market, "count": len(dates)}
-
-

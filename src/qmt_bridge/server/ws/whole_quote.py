@@ -16,13 +16,17 @@ xtdata.subscribe_whole_quote 批量订阅整个市场或板块的行情，
 
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from xtquant import xtdata
 
 from ..helpers import _numpy_to_python
+from ..logging_setup import summarize_codes
 
 router = APIRouter()
+
+logger = logging.getLogger("qmt_bridge.ws.whole_quote")
 
 
 @router.websocket("/ws/whole_quote")
@@ -53,7 +57,7 @@ async def ws_whole_quote(ws: WebSocket):
             try:
                 await ws.send_json(data)
             except Exception:
-                pass
+                logger.debug("全推行情推送失败 client=%s", ws.client, exc_info=True)
 
         def on_data(data):
             """全市场行情回调 — 在 xtdata 后台线程中被调用。
@@ -66,12 +70,20 @@ async def ws_whole_quote(ws: WebSocket):
         # 订阅全市场行情
         seq_id = xtdata.subscribe_whole_quote(code_list, callback=on_data)
 
+        logger.info(
+            "全推订阅已建立 client=%s 市场=%s seq_id=%s",
+            ws.client, summarize_codes(code_list), seq_id,
+        )
+
         # 保持连接存活，等待客户端断开
         while True:
             await ws.receive_text()
 
     except WebSocketDisconnect:
-        pass
+        logger.info("全推订阅客户端断开 client=%s", ws.client)
+    except Exception:
+        logger.exception("全推 WebSocket 异常 client=%s", ws.client)
+        raise
     finally:
         # 清理：取消全市场行情订阅
         if seq_id is not None:

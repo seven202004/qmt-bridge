@@ -5,9 +5,10 @@
 
 底层对应 xtquant 的 ``xtdata.call_formula()`` 等函数。
 """
+from .base import BaseClient
 
 
-class FormulaMixin:
+class FormulaMixin(BaseClient):
     """公式/指标计算客户端方法集合，对应 /api/formula/* 端点。"""
 
     def call_formula(
@@ -52,63 +53,65 @@ class FormulaMixin:
 
     def call_formula_batch(
         self,
-        formula_name: str,
+        formula_names: list[str],
         stock_codes: list[str],
         period: str = "1d",
         start_time: str = "",
         end_time: str = "",
         count: int = -1,
         dividend_type: str = "none",
-        **params,
+        extend_params: list[dict] | None = None,
     ) -> dict:
         """对多只股票批量调用公式/指标计算。
 
-        与 ``call_formula()`` 功能相同，但支持一次性对多只股票进行计算，
-        避免逐个请求的网络开销。
+        底层调用 ``xtquant.qmttools.functions.call_formula_batch()``，一次请求
+        完成「公式 × 股票」的全部组合计算，避免逐个请求的网络开销。
 
         Args:
-            formula_name: 公式名称
+            formula_names: 公式名称列表，如 ``["MA", "MACD"]``
             stock_codes: 股票代码列表
             period: K 线周期
             start_time: 开始时间
             end_time: 结束时间
             count: 返回条数
             dividend_type: 除权类型
-            **params: 公式额外参数
+            extend_params: 公式扩展参数列表，每个元素对应一组扩展参数
 
         Returns:
-            以股票代码为键的计算结果字典
+            公式计算结果
         """
         return self._post("/api/formula/call_batch", {
-            "formula_name": formula_name,
+            "formula_names": formula_names,
             "stock_codes": stock_codes,
             "period": period,
             "start_time": start_time,
             "end_time": end_time,
             "count": count,
             "dividend_type": dividend_type,
-            "params": params,
+            "extend_params": extend_params or [],
         })
 
     def generate_index_data(
         self,
-        index_code: str,
-        stocks: list[str],
-        weights: list[float],
+        formula_name: str,
+        formula_param: dict | None = None,
+        stocks: list[str] | None = None,
         period: str = "1d",
+        dividend_type: str = "none",
         start_time: str = "",
         end_time: str = "",
     ) -> dict:
         """生成自定义指数数据。
 
-        根据指定的成分股列表和权重，合成自定义指数的行情数据。
-        可用于构建行业指数、策略组合等场景。
+        底层调用 ``xtdata.generate_index_data(formula_name, formula_param, ...)``，
+        由模型公式合成自定义指数行情，可用于构建行业指数、策略组合等场景。
 
         Args:
-            index_code: 自定义指数代码标识
+            formula_name: 模型/公式名称
+            formula_param: 模型参数，如 ``{"param1": 1.0}``
             stocks: 成分股代码列表
-            weights: 各成分股的权重列表（与 stocks 一一对应）
             period: K 线周期
+            dividend_type: 除权类型
             start_time: 开始时间
             end_time: 结束时间
 
@@ -116,43 +119,53 @@ class FormulaMixin:
             合成指数的行情数据字典
         """
         return self._post("/api/formula/generate_index_data", {
-            "index_code": index_code,
-            "stocks": stocks,
-            "weights": weights,
+            "formula_name": formula_name,
+            "formula_param": formula_param or {},
+            "stocks": stocks or [],
             "period": period,
+            "dividend_type": dividend_type,
             "start_time": start_time,
             "end_time": end_time,
         })
 
     def create_formula(
-        self, formula_name: str, formula_file: str, formula_type: str = ""
+        self,
+        formula_name: str,
+        formula_content: str,
+        formula_params: dict | None = None,
     ) -> dict:
         """创建公式。
 
+        底层调用 ``xtdata.create_formula(formula_name, formula_content, formula_params)``。
+
         Args:
             formula_name: 公式名称
-            formula_file: 公式文件路径
-            formula_type: 公式类型
+            formula_content: 公式内容
+            formula_params: 公式参数
 
         Returns:
             创建结果
         """
         return self._post("/api/formula/create", {
             "formula_name": formula_name,
-            "formula_file": formula_file,
-            "formula_type": formula_type,
+            "formula_content": formula_content,
+            "formula_params": formula_params or {},
         })
 
-    def import_formula(self, formula_file: str) -> dict:
+    def import_formula(self, formula_name: str, formula_file: str) -> dict:
         """导入公式。
 
+        底层调用 ``xtdata.import_formula(formula_name, file_path)``。
+
         Args:
-            formula_file: 公式文件路径
+            formula_name: 公式名称
+            formula_file: 公式文件路径（一般为 ``.rzrk`` 文件）
 
         Returns:
             导入结果
         """
         return self._post("/api/formula/import", {
+            "formula_name": formula_name,
             "formula_file": formula_file,
         })
 

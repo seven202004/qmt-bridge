@@ -128,6 +128,8 @@ curl http://<Windows局域网IP>:8000/api/meta/health
 | `QMT_BRIDGE_HOST` | `--host` | `0.0.0.0` | 监听地址（`0.0.0.0` = 允许局域网访问） |
 | `QMT_BRIDGE_PORT` | `--port` | `8000` | 监听端口 |
 | `QMT_BRIDGE_LOG_LEVEL` | `--log-level` | `info` | 日志级别：critical / error / warning / info / debug |
+| `QMT_BRIDGE_LOG_FILE` | — | _(空)_ | 日志文件路径（留空只输出到控制台）；带轮转，目录自动创建 |
+| `QMT_BRIDGE_LOG_ACCESS` | — | `true` | 是否输出每请求访问日志（含请求 ID、客户端地址、耗时） |
 | `QMT_BRIDGE_WORKERS` | `--workers` | `1` | Worker 数量（Windows 下建议保持 1） |
 | `QMT_BRIDGE_API_KEY` | `--api-key` | _(空)_ | API Key，用于保护交易端点 |
 | `QMT_BRIDGE_REQUIRE_AUTH_FOR_DATA` | — | `false` | 数据端点是否也要求认证 |
@@ -189,7 +191,7 @@ curl http://<Windows局域网IP>:8000/api/meta/health
 | GET | `/api/tick/l2_quote` | L2 行情快照 |
 | GET | `/api/tick/l2_order` | L2 逐笔委托 |
 | GET | `/api/tick/l2_transaction` | L2 逐笔成交 |
-| GET | `/api/tick/l2_thousand_quote` | L2 千档行情 |
+| GET | `/api/tick/l2_thousand_queue` | L2 千档委托队列 |
 
 ### Sector — 板块数据 `/api/sector/*`
 
@@ -276,6 +278,7 @@ curl http://<Windows局域网IP>:8000/api/meta/health
 | GET | `/api/meta/period_list` | K 线周期列表 |
 | GET | `/api/meta/stock_list` | 按类别获取证券列表 |
 | GET | `/api/meta/last_trade_date` | 最近交易日 |
+| GET | `/api/meta/quote_server_status` | 行情服务器状态 |
 
 ### Download — 数据下载 `/api/download/*`
 
@@ -301,6 +304,10 @@ curl http://<Windows局域网IP>:8000/api/meta/health
 | GET | `/api/trading/positions` | 查询持仓 |
 | GET | `/api/trading/asset` | 查询资产 |
 | GET | `/api/trading/order_detail` | 查询单笔委托 |
+| POST | `/api/trading/smart_algo_order_async` | 算法交易异步下单 |
+| POST | `/api/trading/smart_algo_task_cancel_async` | 撤销算法交易任务 |
+| GET | `/api/trading/smart_algo_task` | 查询算法交易任务 |
+| GET | `/api/trading/smart_algo_param` | 查询算法参数说明 |
 
 ### Credit — 融资融券 `/api/credit/*` (需要 API Key)
 
@@ -319,8 +326,12 @@ curl http://<Windows局域网IP>:8000/api/meta/health
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/fund/transfer` | 资金划转 |
-| GET | `/api/fund/history` | 划转记录 |
-| POST | `/api/bank/transfer` | 银证转账 |
+| POST | `/api/fund/ctp_option_to_future` | 期权→期货划转 |
+| POST | `/api/fund/ctp_future_to_option` | 期货→期权划转 |
+| POST | `/api/fund/secu_transfer` | 证券划转 |
+| POST | `/api/bank/transfer_in` | 银行→证券转账 |
+| POST | `/api/bank/transfer_out` | 证券→银行转账 |
+| GET | `/api/bank/transfer_stream` | 转账流水 |
 
 ### WebSocket
 

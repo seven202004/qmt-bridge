@@ -100,9 +100,11 @@ def create_sector_folder(req: CreateSectorFolderRequest):
     Returns:
         操作结果。
 
-    底层调用: xtdata.create_sector_folder(folder_name)
+    底层调用: xtdata.create_sector_folder(parent_node, folder_name, overwrite=True)
     """
-    result = xtdata.create_sector_folder(req.folder_name)
+    result = xtdata.create_sector_folder(
+        req.parent_node, req.folder_name, req.overwrite
+    )
     return {"status": "ok", "data": _numpy_to_python(result)}
 
 
@@ -117,9 +119,9 @@ def create_sector(req: CreateSectorRequest):
     Returns:
         操作结果。
 
-    底层调用: xtdata.create_sector(sector_name, parent_node)
+    底层调用: xtdata.create_sector(parent_node, sector_name, overwrite=True)
     """
-    result = xtdata.create_sector(req.sector_name, req.parent_node)
+    result = xtdata.create_sector(req.parent_node, req.sector_name)
     return {"status": "ok", "data": _numpy_to_python(result)}
 
 

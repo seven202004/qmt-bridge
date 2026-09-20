@@ -3,11 +3,11 @@
 import sys
 from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="板块管理 - QMT Bridge", layout="wide")
 st.title("板块管理")
@@ -28,7 +28,7 @@ if st.button("加载板块列表", key="btn_sector_list"):
             st.session_state["sectors"] = sectors
             st.success(f"共 {len(sectors)} 个板块")
     except Exception as e:
-        st.error(f"获取板块列表失败: {e}")
+        report_error("获取板块列表失败", e)
 
 sectors = st.session_state.get("sectors", [])
 if sectors:
@@ -62,7 +62,7 @@ if st.button("查询成分股", key="btn_sector_stocks"):
                 df = pd.DataFrame(rows)
                 st.dataframe(df, use_container_width=True, height=400)
         except Exception as e:
-            st.error(f"查询成分股失败: {e}")
+            report_error("查询成分股失败", e)
 
 st.markdown("---")
 
@@ -81,4 +81,4 @@ if st.button("查询板块信息", key="btn_sector_info"):
         else:
             st.json(info)
     except Exception as e:
-        st.error(f"查询板块信息失败: {e}")
+        report_error("查询板块信息失败", e)

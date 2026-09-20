@@ -39,7 +39,7 @@ def get_bond_list():
             result = xtdata.get_stock_list_in_sector(sector)
             if result:
                 stock_set.update(result)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 单板块失败不影响其余板块，失败原因照记
             failures.append((sector, repr(exc)))
             logger.warning("get_stock_list_in_sector(%r) 失败: %r", sector, exc)
             continue

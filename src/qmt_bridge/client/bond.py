@@ -5,9 +5,10 @@
 底层对应 xtquant 的 ``xtdata.get_stock_list_in_sector()`` 和
 ``xtdata.get_instrument_detail()`` 等函数。
 """
+from .base import BaseClient
 
 
-class BondMixin:
+class BondMixin(BaseClient):
     """债券数据客户端方法集合，对应 /api/bond/* 端点。"""
 
     def get_bond_list(self) -> list[str]:

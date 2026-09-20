@@ -4,14 +4,28 @@
 HTTP GET/POST/DELETE 方法，以及 API Key 认证头的构造。
 
 仅依赖 Python 标准库（json, urllib），确保跨平台兼容性。
+
+每次请求在 DEBUG 级记录「方法 / URL / 状态码 / 耗时」，失败时按 ERROR 记录状态码
+与服务端返回的 JSON 错误体（含 request_id，可直接拿去向服务端日志对账）。
+默认级别下不产生任何输出，调用方按需 ``logging.getLogger("qmt_bridge.client")``
+打开即可。
 """
 
+import io
 import json
+import logging
+import time
+import urllib.error
 import urllib.request
-from typing import Optional
+from urllib.parse import quote
+
+logger = logging.getLogger("qmt_bridge.client")
 
 # 默认 HTTP 超时（秒）。避免因服务端异常或网络故障导致客户端永久阻塞。
 DEFAULT_TIMEOUT: float = 30.0
+
+# 失败日志里响应体的截断长度，避免一个超长错误页刷满日志
+_MAX_LOGGED_BODY = 500
 
 
 class BaseClient:
@@ -62,7 +76,7 @@ class BaseClient:
             headers["X-API-Key"] = self.api_key
         return headers
 
-    def _get(self, path: str, params: Optional[dict] = None) -> dict:
+    def _get(self, path: str, params: dict | None = None) -> dict:
         """发送 GET 请求并返回解析后的 JSON。
 
         Args:
@@ -75,7 +89,7 @@ class BaseClient:
         if params:
             # 将参数编码为 URL 查询字符串，跳过 None 值
             query = "&".join(
-                f"{k}={urllib.request.quote(str(v))}"
+                f"{k}={quote(str(v))}"
                 for k, v in params.items()
                 if v is not None
             )
@@ -83,15 +97,15 @@ class BaseClient:
         else:
             url = f"{self.base_url}{path}"
         req = urllib.request.Request(url, headers=self._headers())
-        with self._opener.open(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read().decode())
+        return self._open(req)
 
-    def _post(self, path: str, body: dict) -> dict:
+    def _post(self, path: str, body: dict | list) -> dict:
         """发送 POST 请求（JSON 请求体）并返回解析后的 JSON。
 
         Args:
             path: API 路径，如 ``"/api/trading/order"``
-            body: 请求体字典，会被序列化为 JSON
+            body: 请求体，会被序列化为 JSON。批量接口（如 ``/api/trading/batch_order``）
+                的请求体是**数组**，因此这里允许 list。
 
         Returns:
             服务端返回的 JSON 响应（已解析为 dict）
@@ -100,10 +114,9 @@ class BaseClient:
         data = json.dumps(body).encode()
         headers = {"Content-Type": "application/json", **self._headers()}
         req = urllib.request.Request(url, data=data, headers=headers)
-        with self._opener.open(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read().decode())
+        return self._open(req)
 
-    def _delete(self, path: str, params: Optional[dict] = None) -> dict:
+    def _delete(self, path: str, params: dict | None = None) -> dict:
         """发送 DELETE 请求并返回解析后的 JSON。
 
         Args:
@@ -115,7 +128,7 @@ class BaseClient:
         """
         if params:
             query = "&".join(
-                f"{k}={urllib.request.quote(str(v))}"
+                f"{k}={quote(str(v))}"
                 for k, v in params.items()
                 if v is not None
             )
@@ -123,8 +136,43 @@ class BaseClient:
         else:
             url = f"{self.base_url}{path}"
         req = urllib.request.Request(url, method="DELETE", headers=self._headers())
-        with self._opener.open(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read().decode())
+        return self._open(req)
+
+    def _open(self, req: urllib.request.Request) -> dict:
+        """发送请求并解析 JSON 响应，同时留下调用日志。
+
+        Args:
+            req: 已构造好的请求对象（带 URL、请求头、可选请求体）。
+
+        Returns:
+            服务端返回的 JSON 响应（已解析为 dict）。
+
+        Raises:
+            urllib.error.HTTPError: 服务端返回非 2xx；错误体（含 request_id）
+                已记入日志，且**放回** ``exc``，调用方仍可 ``exc.read()``。
+        """
+        started = time.perf_counter()
+        try:
+            with self._opener.open(req, timeout=self.timeout) as resp:
+                body = json.loads(resp.read().decode())
+                logger.debug(
+                    "%s %s -> %d %.1fms",
+                    req.get_method(), req.full_url, resp.status,
+                    (time.perf_counter() - started) * 1000.0,
+                )
+                return body
+        except urllib.error.HTTPError as exc:
+            detail = exc.read()
+            # 放回去：不能因为我们记了日志就让调用方的 exc.read() 变成空。
+            # addinfourl 在构造时就把 read 绑到了旧 fp 上，换 fp 之后必须重绑一次。
+            exc.fp = io.BytesIO(detail)
+            exc.read = exc.fp.read  # type: ignore[assignment]
+            logger.error(
+                "%s %s -> %d %s",
+                req.get_method(), req.full_url, exc.code,
+                detail[:_MAX_LOGGED_BODY].decode(errors="replace"),
+            )
+            raise
 
     def _to_dataframes(self, data: dict) -> dict:
         """将 ``{stock_code: [records]}`` 格式的数据转换为 ``{stock_code: DataFrame}``。

@@ -8,9 +8,10 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的资金划转方法。
 """
+from .base import BaseClient
 
 
-class FundMixin:
+class FundMixin(BaseClient):
     """资金划转客户端方法集合，对应 /api/fund/* 端点。"""
 
     def fund_transfer(

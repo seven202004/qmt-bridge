@@ -4,9 +4,10 @@
 
 底层对应 xtquant 的 ``xtdata.get_cb_info()`` 等函数。
 """
+from .base import BaseClient
 
 
-class CBMixin:
+class CBMixin(BaseClient):
     """可转债数据客户端方法集合，对应 /api/cb/* 端点。"""
 
     def get_cb_list(self) -> list[str]:

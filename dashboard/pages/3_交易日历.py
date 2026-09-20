@@ -1,14 +1,14 @@
 """交易日历 — 交易日查询、日期校验、节假日。"""
 
 import sys
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="交易日历 - QMT Bridge", layout="wide")
 st.title("交易日历")
@@ -40,7 +40,7 @@ if st.button("查询交易日", key="btn_trading_dates"):
             df = pd.DataFrame({"交易日": dates})
             st.dataframe(df, use_container_width=True, height=300)
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)
 
 st.markdown("---")
 
@@ -63,7 +63,7 @@ if st.button("校验是否交易日", key="btn_is_trading"):
         else:
             st.warning(f"{check_date} 不是交易日")
     except Exception as e:
-        st.error(f"校验失败: {e}")
+        report_error("校验失败", e)
 
 col1, col2 = st.columns(2)
 with col1:
@@ -73,7 +73,7 @@ with col1:
             prev = client.get_prev_trading_date(check_market, date_str)
             st.info(f"上一个交易日: {prev}")
         except Exception as e:
-            st.error(f"查询失败: {e}")
+            report_error("查询失败", e)
 
 with col2:
     if st.button("查询下一个交易日", key="btn_next_td"):
@@ -82,7 +82,7 @@ with col2:
             nxt = client.get_next_trading_date(check_market, date_str)
             st.info(f"下一个交易日: {nxt}")
         except Exception as e:
-            st.error(f"查询失败: {e}")
+            report_error("查询失败", e)
 
 st.markdown("---")
 
@@ -101,4 +101,4 @@ if st.button("获取节假日列表", key="btn_holidays"):
             df = pd.DataFrame({"节假日": holidays})
             st.dataframe(df, use_container_width=True, height=300)
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)

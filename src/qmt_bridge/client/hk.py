@@ -4,9 +4,10 @@
 
 底层对应 xtquant 的 ``xtdata.get_hk_stock_list()`` 等函数。
 """
+from .base import BaseClient
 
 
-class HKMixin:
+class HKMixin(BaseClient):
     """港股通数据客户端方法集合，对应 /api/hk/* 端点。"""
 
     def get_hk_stock_list(self) -> list[str]:

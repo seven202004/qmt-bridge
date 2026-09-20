@@ -15,10 +15,11 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Callable
 
 import pandas as pd
 from xtquant import xtdata
@@ -213,7 +214,7 @@ def download_single_kline(
             status["done"] = True
             return True
         finished = data.get("finished", 0)
-        if finished >= total_val and total_val > 0:
+        if finished >= total_val > 0:
             status["done"] = True
         return status["done"]
 
@@ -226,6 +227,7 @@ def download_single_kline(
         # 轮询本地数据确认目标时间范围内已有数据。
         # 先立即检查一次（无 sleep），多数情况下数据已在本地，0 开销通过。
         deadline = time.monotonic() + timeout
+        last_error: str | None = None
         while True:
             if not client.is_connected():
                 return "disconnected"
@@ -238,9 +240,17 @@ def download_single_kline(
                 )
                 if code in check and check[code] is not None and not check[code].empty:
                     return "ok"
-            except Exception:
-                pass
+            except Exception as exc:
+                # 轮询期间的单次失败不致命，但若一直失败会以 "timeout" 收场，
+                # 这里记住错误原因，超时时一并报出，避免把「一直报错」误判成「下载慢」。
+                last_error = f"{type(exc).__name__}: {exc}"
+                logger.debug("检查 %s %s 本地数据失败: %s", code, period, last_error, exc_info=True)
             if time.monotonic() >= deadline:
+                if last_error:
+                    logger.warning(
+                        "%s %s 下载超时，且每次检查本地数据都报错，最后错误: %s",
+                        code, period, last_error,
+                    )
                 return "timeout"
             time.sleep(0.1)
 
@@ -288,7 +298,7 @@ def download_history_data2_safe(
             status = download_single_kline(
                 client, code, period, start_time, end_time, timeout=timeout,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 单只失败要记录并继续，不能中断整轮下载
             status = f"error: {exc}"
             logger.error("K线下载异常 %s %s: %s", period, code, exc)
 
@@ -331,7 +341,7 @@ def probe_local_dates(stocks: list[str], period: str) -> dict[str, str]:
                     else:
                         dt = pd.Timestamp(last_ts).to_pydatetime()
                     result[stock] = dt.strftime("%Y%m%d")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 探测失败只跳过该批，不影响其它批次
             logger.warning("缓存探测批次失败: %s", exc)
     return result
 
@@ -374,7 +384,7 @@ def probe_financial_cache(
                         stale_count += 1
                 else:
                     fresh.add(stock)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 同上，探测失败不阻断整轮
             logger.warning("财务缓存探测批次失败: %s", exc)
     return fresh, stale_count, incomplete_count
 
@@ -436,7 +446,7 @@ def _run_kline_downloads(
                 res.fail += 1
                 res.failed_indices.append(idx)
                 logger.error("K线 %s %s %s", period, code, status)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 单只异常计入该只失败，整轮继续
             res.fail += 1
             res.failed_indices.append(idx)
             logger.error("K线 %s %s 异常: %s", period, code, exc)
@@ -482,7 +492,7 @@ def download_kline_incremental(
                 for stock, df in data.items():
                     if df is not None and not df.empty:
                         has_history.add(stock)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — 探测失败按"无历史"处理，交由后续补全
                 logger.warning("历史完整性探测失败: %s", exc)
         incomplete_stocks = set(stocks_with_cache) - has_history
 
@@ -612,7 +622,7 @@ def download_financial_incremental(
             "财务数据重试第 %d 轮: %d 批 (%d 只), 超时 %ds",
             retry_round, len(failed), retry_stocks, retry_timeout,
         )
-        r_ok, r_fail, r_to, still_failed = _run_financial_batches(
+        r_ok, _r_fail, _r_to, still_failed = _run_financial_batches(
             batches, failed, table_list, retry_timeout, delay,
         )
         ok += r_ok
@@ -666,7 +676,7 @@ def _run_financial_batches(
             fail_count += len(batch)
             failed_indices.append(idx)
             logger.error("财务数据批次 %d 超时 (%d秒, %d 只)", idx + 1, timeout, len(batch))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — 单批异常计入该批失败并触发重试
             cancelled[0] = True
             fail_count += len(batch)
             failed_indices.append(idx)

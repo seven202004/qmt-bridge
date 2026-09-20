@@ -134,7 +134,7 @@ class FeishuWebhookBackend(NotifierBackend):
         else:
             try:
                 data = resp.json()
-            except Exception:
+            except Exception:  # noqa: BLE001 — 非 JSON 响应按推送失败处理，不抛给调用方
                 logger.warning("Feishu returned non-JSON response: %s", resp.text[:200])
                 return
             if data.get("code", 0) != 0:

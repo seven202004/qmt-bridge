@@ -3,11 +3,11 @@
 import sys
 from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="合约信息 - QMT Bridge", layout="wide")
 st.title("合约信息")
@@ -45,7 +45,7 @@ with tab1:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询失败: {e}")
+            report_error("查询失败", e)
 
 # ── 指数权重 ──────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ with tab2:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询失败: {e}")
+            report_error("查询失败", e)
 
 # ── 期权链 ────────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ with tab3:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询失败: {e}")
+            report_error("查询失败", e)
 
     st.subheader("期权列表")
     col1, col2, col3 = st.columns(3)
@@ -124,7 +124,7 @@ with tab3:
                     else:
                         st.json(data)
             except Exception as e:
-                st.error(f"查询失败: {e}")
+                report_error("查询失败", e)
 
 # ── ETF / 可转债 ──────────────────────────────────────────────────
 
@@ -146,7 +146,7 @@ with tab4:
                     df = pd.DataFrame({"ETF 代码": etfs})
                     st.dataframe(df, use_container_width=True, height=300)
             except Exception as e:
-                st.error(f"查询失败: {e}")
+                report_error("查询失败", e)
 
     with col2:
         st.subheader("可转债列表")
@@ -161,7 +161,7 @@ with tab4:
                     df = pd.DataFrame({"可转债代码": cbs})
                     st.dataframe(df, use_container_width=True, height=300)
             except Exception as e:
-                st.error(f"查询失败: {e}")
+                report_error("查询失败", e)
 
     st.markdown("---")
 
@@ -182,7 +182,7 @@ with tab4:
                     if components:
                         st.dataframe(pd.DataFrame(components), use_container_width=True, height=300)
             except Exception as e:
-                st.error(f"查询失败: {e}")
+                report_error("查询失败", e)
 
     st.subheader("可转债详情")
     cb_code = st.text_input("可转债代码", key="cb_detail_code")
@@ -198,4 +198,4 @@ with tab4:
                 else:
                     st.json(data)
             except Exception as e:
-                st.error(f"查询失败: {e}")
+                report_error("查询失败", e)

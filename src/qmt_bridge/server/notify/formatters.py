@@ -24,6 +24,10 @@ _COLORS: dict[str, str] = {
     "asset": "blue",            # 资产变动 — 蓝色
     "position": "blue",         # 持仓变动 — 蓝色
     "account_status": "blue",   # 账户状态 — 蓝色
+    "bank_transfer_response": "green",  # 银证转账异步响应 — 绿色
+    "ctp_transfer_response": "green",   # 期货内部划转异步响应 — 绿色
+    "smart_algo_response": "blue",      # 算法交易下单回报 — 蓝色
+    "smart_task_response": "blue",      # 算法交易任务操作回报 — 蓝色
     "test": "turquoise",        # 测试通知 — 青绿色
 }
 
@@ -38,11 +42,16 @@ _TITLES: dict[str, str] = {
     "asset": "资产变动",
     "position": "持仓变动",
     "account_status": "账户状态",
+    "bank_transfer_response": "银证转账结果",
+    "ctp_transfer_response": "期货内部划转结果",
+    "smart_algo_response": "算法交易下单",
+    "smart_task_response": "算法任务操作",
     "test": "测试通知",
 }
 
 # 委托类型数值到中文名称的映射
-_ORDER_TYPE_MAP: dict[int, str] = {
+# 键含 None：事件里 order_type 缺失/为 null 时按"未知"走默认分支，不能因此崩掉
+_ORDER_TYPE_MAP: dict[int | None, str] = {
     23: "买入",
     24: "卖出",
 }
@@ -147,6 +156,31 @@ def _build_fields(event: dict) -> list[dict]:
     if etype == "account_status":
         # 账户状态通知
         return [_field("状态", data.get("status", ""))]
+
+    if etype in ("bank_transfer_response", "ctp_transfer_response"):
+        # 划转异步响应通知：展示流水号与柜台返回结果
+        return [
+            _field("流水号", data.get("seq", "")),
+            _field("结果", "成功" if data.get("success") else "失败"),
+            _field("说明", data.get("msg", "")),
+        ]
+
+    if etype == "smart_algo_response":
+        # 算法交易下单回报
+        return [
+            _field("任务号", data.get("task_id", "")),
+            _field("算法", data.get("strategy_name", "")),
+            _field("备注", data.get("order_remark", "")),
+            _field("说明", data.get("error_msg", "") or "受理成功"),
+        ]
+
+    if etype == "smart_task_response":
+        # 算法交易任务操作回报（撤单等）
+        return [
+            _field("任务号", data.get("task_id", "")),
+            _field("结果", "成功" if data.get("success") else "失败"),
+            _field("说明", data.get("operate_reason", "") or data.get("error_msg", "")),
+        ]
 
     if etype == "test":
         # 测试通知

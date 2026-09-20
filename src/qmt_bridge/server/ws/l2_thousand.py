@@ -17,13 +17,17 @@
 
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from xtquant import xtdata
 
 from ..helpers import _numpy_to_python
+from ..logging_setup import summarize_codes
 
 router = APIRouter()
+
+logger = logging.getLogger("qmt_bridge.ws.l2_thousand")
 
 
 @router.websocket("/ws/l2_thousand")
@@ -54,7 +58,7 @@ async def ws_l2_thousand(ws: WebSocket):
             try:
                 await ws.send_json(data)
             except Exception:
-                pass
+                logger.debug("千档行情推送失败 client=%s", ws.client, exc_info=True)
 
         def on_data(data):
             """千档行情回调 — 在 xtdata 后台线程中被调用。
@@ -73,12 +77,20 @@ async def ws_l2_thousand(ws: WebSocket):
             )
             seq_ids.append(seq)
 
+        logger.info(
+            "千档订阅已建立 client=%s 股票=%d只 %s",
+            ws.client, len(seq_ids), summarize_codes(stocks),
+        )
+
         # 保持连接存活，等待客户端断开
         while True:
             await ws.receive_text()
 
     except WebSocketDisconnect:
-        pass
+        logger.info("千档订阅客户端断开 client=%s 订阅数=%d", ws.client, len(seq_ids))
+    except Exception:
+        logger.exception("千档 WebSocket 异常 client=%s", ws.client)
+        raise
     finally:
         # 清理：取消所有千档行情订阅
         for seq in seq_ids:

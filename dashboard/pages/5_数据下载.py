@@ -6,7 +6,7 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="数据下载 - QMT Bridge", layout="wide")
 st.title("数据下载")
@@ -47,7 +47,7 @@ if st.button("开始批量下载", key="btn_batch_download", type="primary"):
             st.success("下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
 st.markdown("---")
 
@@ -66,7 +66,7 @@ with col1:
             st.success("板块数据下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
     if st.button("下载指数权重", key="btn_dl_index", use_container_width=True):
         try:
@@ -75,7 +75,7 @@ with col1:
             st.success("指数权重下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
     if st.button("下载 ETF 信息", key="btn_dl_etf", use_container_width=True):
         try:
@@ -84,7 +84,7 @@ with col1:
             st.success("ETF 信息下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
     if st.button("下载节假日数据", key="btn_dl_holiday", use_container_width=True):
         try:
@@ -93,7 +93,7 @@ with col1:
             st.success("节假日数据下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
 with col2:
     if st.button("下载可转债数据", key="btn_dl_cb", use_container_width=True):
@@ -103,7 +103,7 @@ with col2:
             st.success("可转债数据下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
     if st.button("下载历史合约", key="btn_dl_contracts", use_container_width=True):
         try:
@@ -112,7 +112,7 @@ with col2:
             st.success("历史合约下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
 with col3:
     if st.button("下载合约元数据表", key="btn_dl_metatable", use_container_width=True):
@@ -122,16 +122,20 @@ with col3:
             st.success("合约元数据表下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)
 
     if st.button("下载表格数据", key="btn_dl_tabular", use_container_width=True):
-        try:
-            with st.spinner("下载中..."):
-                result = client.download_tabular_data([])
-            st.success("表格数据下载完成")
-            st.json(result)
-        except Exception as e:
-            st.error(f"下载失败: {e}")
+        tab_codes = [c.strip() for line in dl_stocks.split("\n") for c in line.split(",") if c.strip()]
+        if not tab_codes:
+            st.warning("请在上方「股票代码」中输入至少一个代码。")
+        else:
+            try:
+                with st.spinner("下载中..."):
+                    result = client.download_tabular_data(tab_codes, period=dl_period)
+                st.success("表格数据下载完成")
+                st.json(result)
+            except Exception as e:
+                report_error("下载失败", e)
 
 
 st.markdown("---")
@@ -163,4 +167,4 @@ if st.button("下载财务数据", key="btn_dl_financial"):
             st.success("财务数据下载完成")
             st.json(result)
         except Exception as e:
-            st.error(f"下载失败: {e}")
+            report_error("下载失败", e)

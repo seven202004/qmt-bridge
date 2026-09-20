@@ -301,45 +301,39 @@ def get_full_kline(
 
 @router.get("/fullspeed_orderbook")
 def get_fullspeed_orderbook(
-    stock: str = Query(..., description="股票代码"),
-    start_time: str = Query("", description="开始时间"),
-    end_time: str = Query("", description="结束时间"),
+    stocks: str = Query(..., description="股票代码，多个用逗号分隔"),
 ):
     """获取极速委托簿数据。
 
-    提供逐笔级别的委托簿快照数据，适用于高频策略分析。
+    提供全速（极速）委托簿快照数据，适用于高频策略与市场微结构分析。
 
     Args:
-        stock: 单个股票代码。
-        start_time: 开始时间。
-        end_time: 结束时间。
+        stocks: 股票代码，多个用逗号分隔。
 
     Returns:
-        该股票的极速委托簿数据。
+        这些股票的极速委托簿数据。
 
-    底层调用: xtdata.get_fullspeed_orderbook(stock, start_time=..., end_time=...)
+    底层调用: xtdata.get_fullspeed_orderbook(code_list)
     """
-    raw = xtdata.get_fullspeed_orderbook(stock, start_time=start_time, end_time=end_time)
-    return {"stock": stock, "data": _numpy_to_python(raw)}
+    stock_list = [s.strip() for s in stocks.split(",")]
+    raw = xtdata.get_fullspeed_orderbook(stock_list)
+    return {"stocks": stock_list, "data": _numpy_to_python(raw)}
 
 
 @router.get("/transactioncount")
 def get_transactioncount(
-    stock: str = Query(..., description="股票代码"),
-    start_time: str = Query("", description="开始时间"),
-    end_time: str = Query("", description="结束时间"),
+    stocks: str = Query(..., description="股票代码，多个用逗号分隔"),
 ):
     """获取逐笔成交计数数据。
 
     Args:
-        stock: 单个股票代码。
-        start_time: 开始时间。
-        end_time: 结束时间。
+        stocks: 股票代码，多个用逗号分隔。
 
     Returns:
-        该股票的逐笔成交计数数据。
+        这些股票的逐笔成交计数数据。
 
-    底层调用: xtdata.get_transactioncount(stock, start_time=..., end_time=...)
+    底层调用: xtdata.get_transactioncount(code_list)
     """
-    raw = xtdata.get_transactioncount(stock, start_time=start_time, end_time=end_time)
-    return {"stock": stock, "data": _numpy_to_python(raw)}
+    stock_list = [s.strip() for s in stocks.split(",")]
+    raw = xtdata.get_transactioncount(stock_list)
+    return {"stocks": stock_list, "data": _numpy_to_python(raw)}

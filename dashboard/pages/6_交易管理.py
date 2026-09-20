@@ -3,11 +3,11 @@
 import sys
 from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="交易管理 - QMT Bridge", layout="wide")
 st.title("交易管理")
@@ -69,7 +69,7 @@ with tab1:
                 st.success("委托已提交")
                 st.json(result)
             except Exception as e:
-                st.error(f"下单失败: {e}")
+                report_error("下单失败", e)
 
 # ── 当日委托 ──────────────────────────────────────────────────────
 
@@ -93,7 +93,7 @@ with tab2:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询委托失败: {e}")
+            report_error("查询委托失败", e)
 
     st.subheader("撤单")
     cancel_id = st.number_input("委托 ID", value=0, min_value=0, step=1, key="cancel_id")
@@ -107,7 +107,7 @@ with tab2:
                 st.success("撤单请求已提交")
                 st.json(result)
             except Exception as e:
-                st.error(f"撤单失败: {e}")
+                report_error("撤单失败", e)
 
 # ── 持仓 ──────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ with tab3:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询持仓失败: {e}")
+            report_error("查询持仓失败", e)
 
 # ── 资产 ──────────────────────────────────────────────────────────
 
@@ -157,7 +157,7 @@ with tab4:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询资产失败: {e}")
+            report_error("查询资产失败", e)
 
 # ── 成交记录 ──────────────────────────────────────────────────────
 
@@ -179,4 +179,4 @@ with tab5:
                 else:
                     st.json(data)
         except Exception as e:
-            st.error(f"查询成交失败: {e}")
+            report_error("查询成交失败", e)

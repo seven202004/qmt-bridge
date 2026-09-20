@@ -8,9 +8,10 @@
 
 用于监控服务端运行状态和获取系统配置信息。
 """
+from .base import BaseClient
 
 
-class MetaMixin:
+class MetaMixin(BaseClient):
     """系统元数据客户端方法集合，对应 /api/meta/* 端点。"""
 
     def get_markets(self) -> dict:
@@ -112,3 +113,4 @@ class MetaMixin:
             行情服务器状态详情字典
         """
         return self._get("/api/meta/quote_server_status")
+

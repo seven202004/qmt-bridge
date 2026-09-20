@@ -17,7 +17,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from .access_log import AccessLogMiddleware, unhandled_exception_handler
 from .config import Settings, get_settings
+from .logging_setup import setup_logging
 from .xtdata_lock import XtdataSerializerMiddleware
 
 # 全局日志记录器，用于记录服务端运行状态
@@ -84,9 +86,9 @@ async def _lifespan(app: FastAPI):
 
             # 如果交易模块也已启用，将通知器注入到交易回调中
             # 这样当 xttrader 产生委托/成交回调时，可自动推送通知
-            manager = getattr(app.state, "trader_manager", None)
-            if manager is not None and hasattr(manager, "_callback"):
-                manager._callback.set_notifier(notifier)
+            trader_manager = getattr(app.state, "trader_manager", None)
+            if trader_manager is not None and hasattr(trader_manager, "_callback"):
+                trader_manager._callback.set_notifier(notifier)
         except Exception:
             logger.exception("Failed to initialize notification module")
             app.state.notifier_manager = None
@@ -96,19 +98,19 @@ async def _lifespan(app: FastAPI):
     yield  # --- 应用运行中，以下为关闭阶段 ---
 
     # 停止通知模块，释放后台资源
-    notifier = getattr(app.state, "notifier_manager", None)
-    if notifier is not None:
+    notifier_manager = getattr(app.state, "notifier_manager", None)
+    if notifier_manager is not None:
         try:
-            await notifier.stop()
+            await notifier_manager.stop()
             logger.info("Notification module stopped")
         except Exception:
             logger.exception("Error stopping notification module")
 
     # 断开交易管理器连接（底层调用 xttrader.disconnect()）
-    manager = getattr(app.state, "trader_manager", None)
-    if manager is not None:
+    trader_manager = getattr(app.state, "trader_manager", None)
+    if trader_manager is not None:
         try:
-            manager.disconnect()
+            trader_manager.disconnect()
             logger.info("Trading module disconnected")
         except Exception:
             logger.exception("Error disconnecting trading module")
@@ -132,6 +134,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
         settings = get_settings()
 
+    # 统一日志配置（控制台 + 可选轮转文件）；重复创建 app 时会自动重置 handler
+    setup_logging(
+        level=settings.log_level,
+        log_file=settings.log_file,
+        max_bytes=settings.log_max_bytes,
+        backup_count=settings.log_backup_count,
+    )
+    logger.info(
+        "启动配置: host=%s port=%s workers=%s log_level=%s log_file=%s "
+        "trading_enabled=%s notify_enabled=%s",
+        settings.host, settings.port, settings.workers, settings.log_level,
+        settings.log_file or "(仅控制台)", settings.trading_enabled, settings.notify_enabled,
+    )
+
     app = FastAPI(
         title="QMT Bridge",
         description="miniQMT market data & trading API bridge",
@@ -139,8 +155,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=_lifespan,
     )
 
+    # 未处理异常统一记录到本项目日志并返回带 request_id 的 JSON 500
+    app.add_exception_handler(Exception, unhandled_exception_handler)
+
+    # 中间件顺序：Starlette 中「最后 add 的在最外层」，因此先加串行化、后加访问日志，
+    # 让访问日志统计到包含 xtdata 串行化等待在内的总耗时。
     # 全局 xtdata 串行化中间件（仅拦截调用 xtdata 的 /api/* 端点）
     app.add_middleware(XtdataSerializerMiddleware)
+
+    # 访问日志中间件（最外层）
+    app.add_middleware(AccessLogMiddleware, enabled=settings.log_access)
 
     # ------------------------------------------------------------------
     # 注册数据查询路由（始终可用，无需启用交易模块）
@@ -191,7 +215,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # 注册 WebSocket 端点（实时数据推送）
     # WebSocket 不加串行化依赖，避免长连接永久持锁
     # ------------------------------------------------------------------
-    from .ws import download_progress, formula as formula_ws, realtime, whole_quote
+    from .ws import download_progress, realtime, whole_quote
+    from .ws import formula as formula_ws
 
     app.include_router(realtime.router)
     app.include_router(whole_quote.router)

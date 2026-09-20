@@ -3,13 +3,13 @@
 import sys
 from pathlib import Path
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-import pandas as pd
 
 # 将 dashboard/ 加入 sys.path 以便 import _sidebar
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="行情数据 - QMT Bridge", layout="wide")
 st.title("行情数据")
@@ -87,7 +87,7 @@ if st.button("查询 K 线", key="btn_kline"):
             with st.expander("查看原始数据"):
                 st.dataframe(df, use_container_width=True)
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)
 
 st.markdown("---")
 
@@ -120,7 +120,7 @@ if st.button("获取快照", key="btn_snapshot"):
                     df = df[cols]
                 st.dataframe(df, use_container_width=True)
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)
 
 st.markdown("---")
 
@@ -155,4 +155,4 @@ if st.button("刷新指数", key="btn_indices"):
             else:
                 st.json(data)
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)

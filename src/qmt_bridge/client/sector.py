@@ -12,9 +12,10 @@
     "创业板"、"科创板"、行业板块、概念板块等。用户也可以创建自定义板块
     来管理自己的股票池。
 """
+from .base import BaseClient
 
 
-class SectorMixin:
+class SectorMixin(BaseClient):
     """板块数据客户端方法集合，对应 /api/sector/* 端点。"""
 
     def get_sector_list(self) -> list[str]:
@@ -85,19 +86,27 @@ class SectorMixin:
     # 写操作（自定义板块管理）
     # ------------------------------------------------------------------
 
-    def create_sector_folder(self, folder_name: str) -> dict:
+    def create_sector_folder(
+        self, folder_name: str, parent_node: str = "", overwrite: bool = True
+    ) -> dict:
         """创建板块文件夹。
 
-        底层调用 ``xtdata.create_sector_folder()``，在板块树中创建一个
-        新的文件夹节点，用于组织自定义板块。
+        底层调用 ``xtdata.create_sector_folder(parent_node, folder_name, overwrite=True)``，
+        在板块树中创建一个新的文件夹节点，用于组织自定义板块。
 
         Args:
             folder_name: 文件夹名称
+            parent_node: 父节点名称，为空时创建在根目录下
+            overwrite: 同名文件夹是否覆盖；False 时自动追加序号
 
         Returns:
             操作结果
         """
-        return self._post("/api/sector/create_folder", {"folder_name": folder_name})
+        return self._post("/api/sector/create_folder", {
+            "folder_name": folder_name,
+            "parent_node": parent_node,
+            "overwrite": overwrite,
+        })
 
     def create_sector(self, sector_name: str, parent_node: str = "") -> dict:
         """创建自定义板块。

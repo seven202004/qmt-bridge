@@ -35,6 +35,7 @@ nav:
   - 配置参考: configuration.md
   - REST API 速查: rest-api.md
   - WebSocket: websocket.md
+  - xtquant 接口审计: xtquant-api-audit.md
   - Python 客户端 API:
       - 总览: api/index.md
       - 行情数据: api/market.md

@@ -11,10 +11,10 @@
 ``xtdata.get_local_data()`` 等函数。
 """
 
-from typing import Optional
+from .base import BaseClient
 
 
-class MarketMixin:
+class MarketMixin(BaseClient):
     """行情数据客户端方法集合，对应 /api/market/* 及旧版行情端点。"""
 
     # ------------------------------------------------------------------
@@ -403,47 +403,43 @@ class MarketMixin:
         return resp.get("data", {})
 
     def get_fullspeed_orderbook(
-        self, stock: str, start_time: str = "", end_time: str = ""
+        self, stocks: str | list[str]
     ) -> dict:
         """获取全速委托簿数据。
 
-        底层调用 ``xtdata.get_fullspeed_orderbook()``，返回指定时间范围内
-        的高频委托簿快照数据（买卖各档价量），适合高频策略和市场微结构分析。
+        底层调用 ``xtdata.get_fullspeed_orderbook()``，返回指定股票的全速
+        委托簿快照数据（买卖各档价量），适合高频策略和市场微结构分析。
 
         Args:
-            stock: 股票代码
-            start_time: 开始时间
-            end_time: 结束时间
+            stocks: 股票代码或代码列表，多个代码会被拼接为逗号分隔的查询参数
 
         Returns:
             委托簿数据字典
         """
+        if isinstance(stocks, str):
+            stocks = [stocks]
         resp = self._get("/api/market/fullspeed_orderbook", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
+            "stocks": ",".join(stocks),
         })
         return resp.get("data", {})
 
     def get_transactioncount(
-        self, stock: str, start_time: str = "", end_time: str = ""
+        self, stocks: str | list[str]
     ) -> dict:
         """获取成交笔数统计数据。
 
-        底层调用 ``xtdata.get_transactioncount()``，返回指定时间范围内
-        每个时间切片的成交笔数统计，可用于分析市场活跃度和资金流向。
+        底层调用 ``xtdata.get_transactioncount()``，返回指定股票的逐笔成交
+        笔数统计，可用于分析市场活跃度和资金流向。
 
         Args:
-            stock: 股票代码
-            start_time: 开始时间
-            end_time: 结束时间
+            stocks: 股票代码或代码列表，多个代码会被拼接为逗号分隔的查询参数
 
         Returns:
             成交笔数数据字典
         """
+        if isinstance(stocks, str):
+            stocks = [stocks]
         resp = self._get("/api/market/transactioncount", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
+            "stocks": ",".join(stocks),
         })
         return resp.get("data", {})

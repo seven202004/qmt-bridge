@@ -16,7 +16,7 @@
 """
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -68,6 +68,12 @@ class Settings:
     log_level: str = "info"      # 日志级别（传递给 uvicorn）
     workers: int = 1             # 工作进程数（Windows 下建议为 1）
 
+    # ---- 日志落盘配置 ----
+    log_file: str = ""                          # 日志文件路径，为空表示只输出到控制台
+    log_max_bytes: int = 10 * 1024 * 1024       # 单文件大小上限，超过后轮转（默认 10MB）
+    log_backup_count: int = 5                   # 保留的历史日志文件数量
+    log_access: bool = True                     # 是否输出每个 HTTP 请求的访问日志
+
     # ---- 安全认证配置 ----
     api_key: str = ""                    # API 密钥（为空表示未配置认证）
     require_auth_for_data: bool = False  # 是否对数据查询接口也要求认证
@@ -117,6 +123,13 @@ class Settings:
             port=int(os.environ.get("QMT_BRIDGE_PORT", "8000")),
             log_level=os.environ.get("QMT_BRIDGE_LOG_LEVEL", "info"),
             workers=int(os.environ.get("QMT_BRIDGE_WORKERS", "1")),
+            log_file=os.environ.get("QMT_BRIDGE_LOG_FILE", ""),
+            log_max_bytes=int(
+                os.environ.get("QMT_BRIDGE_LOG_MAX_BYTES", str(10 * 1024 * 1024))
+            ),
+            log_backup_count=int(os.environ.get("QMT_BRIDGE_LOG_BACKUP_COUNT", "5")),
+            log_access=os.environ.get("QMT_BRIDGE_LOG_ACCESS", "true").lower()
+            not in ("0", "false", "no"),
             api_key=os.environ.get("QMT_BRIDGE_API_KEY", ""),
             require_auth_for_data=os.environ.get(
                 "QMT_BRIDGE_REQUIRE_AUTH_FOR_DATA", ""

@@ -12,9 +12,10 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的 SMT 相关方法。
 """
+from .base import BaseClient
 
 
-class SMTMixin:
+class SMTMixin(BaseClient):
     """约定式交易客户端方法集合，对应 /api/smt/* 端点。"""
 
     def smt_query_quoter(self, account_id: str = "") -> dict:

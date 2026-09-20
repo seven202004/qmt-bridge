@@ -11,7 +11,10 @@ from fastapi import APIRouter, Depends, Query
 
 from ..deps import get_trader_manager
 from ..helpers import _numpy_to_python, ok_response
-from ..models import BankAmountQueryRequest, BankTransferRequest, BankTransferStreamRequest
+from ..models import (
+    BankAmountQueryRequest,
+    BankTransferRequest,
+)
 from ..security import require_api_key
 
 router = APIRouter(prefix="/api/bank", tags=["bank"], dependencies=[Depends(require_api_key)])

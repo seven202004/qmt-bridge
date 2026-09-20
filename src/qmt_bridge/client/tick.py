@@ -8,9 +8,10 @@
 
 注意: L2 数据需要开通 Level-2 行情权限才能获取。
 """
+from .base import BaseClient
 
 
-class TickMixin:
+class TickMixin(BaseClient):
     """Level-2/Tick 数据客户端方法集合，对应 /api/tick/* 端点。"""
 
     def get_l2_quote(
@@ -88,113 +89,74 @@ class TickMixin:
         })
         return resp.get("data", {})
 
-    def get_l2_thousand_quote(
-        self, stock: str, start_time: str = "", end_time: str = "", count: int = -1
+    def get_l2_thousand_queue(
+        self, stock: str, gear_num: int = -1, price: str = ""
     ) -> dict:
-        """获取 L2 千档行情快照。
+        """获取 L2 千档委托队列快照。
 
-        底层调用 ``xtdata.get_l2_thousand_quote()``，返回买卖各1000档的
-        盘口报价数据，适合深度分析市场流动性和订单簿结构。
+        底层调用 ``xtdata.get_l2thousand_queue()``。千档行情的实时推送请使用
+        WebSocket 端点 ``/ws/l2_thousand``（``subscribe_l2_thousand``）。
 
         Args:
             stock: 股票代码
-            start_time: 开始时间
-            end_time: 结束时间
-            count: 返回条数，-1 表示全部
+            gear_num: 档位，-1 表示全部档位
+            price: 价格位，支持单个价格 ``"10.5"``、逗号分隔多个价格
+                ``"10.5,10.6"``、或 ``"10.5-10.8"`` 区间；留空表示全部价格
 
         Returns:
-            千档行情数据字典
+            千档委托队列数据字典
         """
-        resp = self._get("/api/tick/l2_thousand_quote", {
+        resp = self._get("/api/tick/l2_thousand_queue", {
             "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
+            "gear_num": gear_num,
+            "price": price,
         })
         return resp.get("data", {})
 
-    def get_l2_thousand_orderbook(
-        self, stock: str, start_time: str = "", end_time: str = "", count: int = -1
-    ) -> dict:
-        """获取 L2 千档委托簿数据。
+    def get_broker_queue(self, stocks: list[str]) -> dict:
+        """获取经纪商队列数据（港股）。
 
-        底层调用 ``xtdata.get_l2_thousand_orderbook()``，返回买卖各1000档
-        的委托簿完整快照，包含各档位的价格和挂单量。
+        底层调用 ``xtdata.get_broker_queue_data(stock_list=[...])``。
 
         Args:
-            stock: 股票代码
-            start_time: 开始时间
-            end_time: 结束时间
-            count: 返回条数，-1 表示全部
-
-        Returns:
-            千档委托簿数据字典
-        """
-        resp = self._get("/api/tick/l2_thousand_orderbook", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
-        return resp.get("data", {})
-
-    def get_l2_thousand_trade(
-        self, stock: str, start_time: str = "", end_time: str = "", count: int = -1
-    ) -> dict:
-        """获取 L2 千档成交数据。
-
-        底层调用 ``xtdata.get_l2_thousand_trade()``，返回千档级别的
-        成交汇总数据。
-
-        Args:
-            stock: 股票代码
-            start_time: 开始时间
-            end_time: 结束时间
-            count: 返回条数，-1 表示全部
-
-        Returns:
-            千档成交数据字典
-        """
-        resp = self._get("/api/tick/l2_thousand_trade", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
-        return resp.get("data", {})
-
-    def get_l2_thousand_queue(self, stock: str) -> dict:
-        """获取 L2 千档队列数据。
-
-        Args:
-            stock: 股票代码
-
-        Returns:
-            千档队列数据字典
-        """
-        resp = self._get("/api/tick/l2_thousand_queue", {"stock": stock})
-        return resp.get("data", {})
-
-    def get_broker_queue(self, stock: str) -> dict:
-        """获取经纪商队列数据。
-
-        Args:
-            stock: 股票代码
+            stocks: 股票代码列表，如 ``["00700.HK"]``
 
         Returns:
             经纪商队列数据字典
         """
-        resp = self._get("/api/tick/broker_queue", {"stock": stock})
+        resp = self._get("/api/tick/broker_queue", {"stocks": ",".join(stocks)})
         return resp.get("data", {})
 
-    def get_order_rank(self, stock: str) -> dict:
-        """获取委托排名数据。
+    def get_order_rank(
+        self,
+        stock: str,
+        order_time: str,
+        order_type: str,
+        order_price: float,
+        order_volume: int,
+        order_left_volume: int,
+    ) -> dict:
+        """获取委托在千档队列中的排名。
+
+        底层调用 ``xtdata.get_order_rank()``，需要千档行情权限。
 
         Args:
             stock: 股票代码
+            order_time: 委托时间，``YYYYMMDD`` 或 ``YYYYMMDDhhmmss``
+            order_type: 委托类型，如 ``"buy"``/``"sell"``
+            order_price: 委托价格
+            order_volume: 委托量
+            order_left_volume: 委托未成交量
 
         Returns:
             委托排名数据字典
         """
-        resp = self._get("/api/tick/order_rank", {"stock": stock})
+        resp = self._get("/api/tick/order_rank", {
+            "stock": stock,
+            "order_time": order_time,
+            "order_type": order_type,
+            "order_price": order_price,
+            "order_volume": order_volume,
+            "order_left_volume": order_left_volume,
+        })
         return resp.get("data", {})

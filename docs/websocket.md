@@ -22,6 +22,14 @@ QMT Bridge 提供 5 个 WebSocket 端点，用于实时数据推送。
 { "stocks": ["000001.SZ", "600519.SH"], "period": "tick" }
 ```
 
+可选字段 `dividend_type`（`none` / `front` / `back` / `front_ratio` / `back_ratio`）用于指定
+复权方式。若历史 K 线是用 `market_data_ex(dividend_type="front")` 之类的复权方式取的，
+订阅时必须传同一个值，否则推送的未复权价与已复权历史不在同一价格尺度上：
+
+```jsonc
+{ "stocks": ["000001.SZ"], "period": "1m", "dividend_type": "front" }
+```
+
 **Python 客户端用法：**
 
 ```python
@@ -36,6 +44,17 @@ def on_tick(data):
 asyncio.run(client.subscribe_realtime(
     stocks=["000001.SZ", "600519.SH"],
     callback=on_tick,
+))
+```
+
+订阅复权 K 线时传入 ``dividend_type``：
+
+```python
+asyncio.run(client.subscribe_realtime(
+    stocks=["000001.SZ"],
+    callback=on_tick,
+    period="1m",
+    dividend_type="front",
 ))
 ```
 
@@ -117,6 +136,23 @@ asyncio.run(client.subscribe_l2_thousand(
     交易回报 WebSocket 需要通过查询参数传递 API Key：`ws://<host>:8000/ws/trade?api_key=your-secret-key`
 
 推送交易事件（委托回报、成交回报、错误信息等）。
+
+事件类型包括：
+
+| `type` | 说明 |
+|--------|------|
+| `order` | 委托状态更新 |
+| `trade` | 成交回报 |
+| `order_error` / `cancel_error` | 下单 / 撤单失败 |
+| `async_response` / `async_cancel_response` | 异步下单 / 撤单受理回报 |
+| `connected` / `disconnected` | 交易连接状态 |
+| `asset` / `position` | 资产 / 持仓变动推送 |
+| `account_status` | 账户状态变化 |
+| `smt_appointment_response` | 约定式交易异步回报 |
+| `bank_transfer_response` | 银证转账异步结果（对应 `/api/bank/transfer_*_async`） |
+| `ctp_transfer_response` | 期货内部划转异步结果（对应 `/api/fund/ctp_*_async`） |
+| `smart_algo_response` | 算法交易下单回报 |
+| `smart_task_response` | 算法交易任务操作回报 |
 
 **Python 客户端用法：**
 

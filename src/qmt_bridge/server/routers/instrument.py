@@ -115,3 +115,5 @@ def get_his_st_data(
     """
     raw = xtdata.get_his_st_data(stock)
     return {"stock": stock, "data": _numpy_to_python(raw)}
+
+

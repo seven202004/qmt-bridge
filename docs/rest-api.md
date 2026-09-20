@@ -26,8 +26,8 @@
 | GET | `/api/market/market_data` | 通用行情数据查询 |
 | GET | `/api/market/market_data3` | 行情数据（dict of DataFrame） |
 | GET | `/api/market/full_kline` | 单只股票完整 K 线 |
-| GET | `/api/market/fullspeed_orderbook` | 全速 Order Book |
-| GET | `/api/market/transactioncount` | 成交笔数 |
+| GET | `/api/market/fullspeed_orderbook` | 全速 Order Book（多股票） |
+| GET | `/api/market/transactioncount` | 成交笔数（多股票） |
 
 ## Tick & L2 — 逐笔数据 `/api/tick/*`
 
@@ -36,12 +36,9 @@
 | GET | `/api/tick/l2_quote` | L2 行情快照 |
 | GET | `/api/tick/l2_order` | L2 逐笔委托 |
 | GET | `/api/tick/l2_transaction` | L2 逐笔成交 |
-| GET | `/api/tick/l2_thousand_quote` | L2 千档行情 |
-| GET | `/api/tick/l2_thousand_orderbook` | L2 千档 Order Book |
-| GET | `/api/tick/l2_thousand_trade` | L2 千档成交 |
-| GET | `/api/tick/l2_thousand_queue` | L2 千档委托队列 |
-| GET | `/api/tick/broker_queue` | 经纪商委托队列 |
-| GET | `/api/tick/order_rank` | 委托排名 |
+| GET | `/api/tick/l2_thousand_queue` | L2 千档委托队列（实时推送见 `/ws/l2_thousand`） |
+| GET | `/api/tick/broker_queue` | 经纪商委托队列（多股票，港股） |
+| GET | `/api/tick/order_rank` | 委托在千档队列中的排名（需委托时间/类型/价格/量） |
 
 ## Sector — 板块管理 `/api/sector/*`
 
@@ -125,7 +122,7 @@
 | POST | `/api/formula/call_batch` | 调用公式（多只股票） |
 | POST | `/api/formula/generate_index_data` | 生成自定义指数 |
 | POST | `/api/formula/create` | 创建公式 |
-| POST | `/api/formula/import` | 导入公式 |
+| POST | `/api/formula/import` | 导入公式（公式名 + 文件路径） |
 | DELETE | `/api/formula/delete` | 删除公式 |
 | GET | `/api/formula/list` | 公式列表 |
 
@@ -142,8 +139,8 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/tabular/data` | 获取表格数据 |
-| GET | `/api/tabular/tables` | 列出可用数据表 |
-| GET | `/api/tabular/formula` | 获取表格公式 |
+| GET | `/api/tabular/tables` | 列出可用数据表（表代码 → 表名） |
+| GET | `/api/tabular/formula` | 按字段查询表格公式（字段格式 `表名.字段名`） |
 
 ## Utility — 工具方法 `/api/utility/*`
 
@@ -219,6 +216,10 @@
 | POST | `/api/trading/export_data` | 导出交易数据 |
 | POST | `/api/trading/query_data` | 查询导出数据 |
 | POST | `/api/trading/sync_transaction` | 同步外部成交 |
+| POST | `/api/trading/smart_algo_order_async` | 算法交易异步下单 |
+| POST | `/api/trading/smart_algo_task_cancel_async` | 撤销算法交易任务 |
+| GET | `/api/trading/smart_algo_task` | 查询算法交易任务 |
+| GET | `/api/trading/smart_algo_param` | 查询算法参数说明 |
 
 ## Credit — 融资融券 `/api/credit/*` :material-lock:
 

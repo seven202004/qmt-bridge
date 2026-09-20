@@ -14,9 +14,7 @@
         ...
 """
 
-from fastapi import Depends, HTTPException, Request, status
-
-from .config import Settings, get_settings
+from fastapi import HTTPException, Request, status
 
 
 def get_trader_manager(request: Request):

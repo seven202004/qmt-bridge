@@ -9,13 +9,21 @@
 需要安装 ``websockets`` 包: ``pip install websockets``
 
 所有方法均为异步（async），需在 asyncio 事件循环中运行。
+
+连接建立/关闭按 DEBUG 级记录（logger 名 ``qmt_bridge.client.ws``）：
+订阅一直阻塞到连接断开，日志里留下「什么时候连上、什么时候断的」，
+便于判断回调不再触发是连接掉了还是服务端没推。连接异常仍由调用方捕获。
 """
 
 import json
-from typing import Callable
+import logging
+from collections.abc import Callable
+
+logger = logging.getLogger("qmt_bridge.client.ws")
+from .base import BaseClient
 
 
-class WebSocketMixin:
+class WebSocketMixin(BaseClient):
     """WebSocket 实时订阅客户端方法集合。"""
 
     async def subscribe_realtime(
@@ -23,13 +31,14 @@ class WebSocketMixin:
         stocks: list[str],
         callback: Callable[[dict], None],
         period: str = "tick",
+        dividend_type: str = "",
     ):
         """订阅实时行情推送。
 
         通过 WebSocket 连接到服务端 ``/ws/realtime`` 端点，实时接收
         指定股票的行情更新数据。
 
-        底层通过 ``xtdata.subscribe_quote()`` 实现实时行情订阅。
+        底层通过 ``xtdata.subscribe_quote2()`` 实现实时行情订阅。
 
         示例::
 
@@ -50,6 +59,10 @@ class WebSocketMixin:
             stocks: 订阅的股票代码列表
             callback: 收到行情数据时的回调函数，参数为行情数据字典
             period: 推送周期 — ``"tick"``（逐笔）或分钟周期如 ``"1m"``
+            dividend_type: 复权方式 — ``""``(不指定) / ``"none"`` / ``"front"`` /
+                ``"back"`` / ``"front_ratio"`` / ``"back_ratio"``。
+                若历史数据用 ``market_data_ex`` 取了复权价，这里必须传相同的复权方式，
+                否则推送价格与历史数据不在同一尺度。
         """
         try:
             import websockets
@@ -60,13 +73,23 @@ class WebSocketMixin:
             )
 
         url = f"{self.ws_url}/ws/realtime"
+        logger.debug("连接 %s (股票=%d只 period=%s)", url, len(stocks), period)
         async with websockets.connect(url) as ws:
             # 发送订阅请求
-            await ws.send(json.dumps({"stocks": stocks, "period": period}))
+            await ws.send(
+                json.dumps(
+                    {
+                        "stocks": stocks,
+                        "period": period,
+                        "dividend_type": dividend_type,
+                    }
+                )
+            )
             # 持续接收行情推送
             async for message in ws:
                 data = json.loads(message)
                 callback(data)
+        logger.debug("连接已关闭 %s", url)
 
     async def subscribe_whole_quote(
         self,
@@ -90,11 +113,13 @@ class WebSocketMixin:
             )
 
         url = f"{self.ws_url}/ws/whole_quote"
+        logger.debug("连接 %s (市场=%s)", url, ",".join(codes))
         async with websockets.connect(url) as ws:
             await ws.send(json.dumps({"codes": codes}))
             async for message in ws:
                 data = json.loads(message)
                 callback(data)
+        logger.debug("连接已关闭 %s", url)
 
     async def subscribe_trade_events(
         self,
@@ -125,10 +150,13 @@ class WebSocketMixin:
         # 通过 URL 查询参数传递 API Key 进行认证
         params = f"?api_key={self.api_key}" if self.api_key else ""
         url = f"{self.ws_url}/ws/trade{params}"
+        # 不打印 params：里面带着 API Key
+        logger.debug("连接 %s", f"{self.ws_url}/ws/trade")
         async with websockets.connect(url) as ws:
             async for message in ws:
                 data = json.loads(message)
                 callback(data)
+        logger.debug("连接已关闭 %s", f"{self.ws_url}/ws/trade")
 
     async def subscribe_l2_thousand(
         self,
@@ -154,8 +182,10 @@ class WebSocketMixin:
             )
 
         url = f"{self.ws_url}/ws/l2_thousand"
+        logger.debug("连接 %s (股票=%d只)", url, len(stocks))
         async with websockets.connect(url) as ws:
             await ws.send(json.dumps({"stocks": stocks}))
             async for message in ws:
                 data = json.loads(message)
                 callback(data)
+        logger.debug("连接已关闭 %s", url)

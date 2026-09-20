@@ -13,12 +13,15 @@
 
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ..downloader import download_history_data2_safe
 
 router = APIRouter()
+
+logger = logging.getLogger("qmt_bridge.ws.download_progress")
 
 
 @router.websocket("/ws/download_progress")
@@ -63,7 +66,7 @@ async def ws_download_progress(ws: WebSocket):
             try:
                 await ws.send_json(data)
             except Exception:
-                pass
+                logger.debug("下载进度推送失败 client=%s", ws.client, exc_info=True)
 
         def on_progress(data):
             """下载进度回调 — 在线程池线程中被调用。"""
@@ -80,4 +83,7 @@ async def ws_download_progress(ws: WebSocket):
         await ws.send_json({"status": "done", "results": results})
 
     except WebSocketDisconnect:
-        pass
+        logger.info("下载进度客户端断开 client=%s", ws.client)
+    except Exception:
+        logger.exception("下载进度 WebSocket 异常 client=%s", ws.client)
+        raise

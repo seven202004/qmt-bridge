@@ -11,9 +11,10 @@
     - 11: 限价
     - 42: 最优五档即时成交剩余撤销
 """
+from .base import BaseClient
 
 
-class TradingMixin:
+class TradingMixin(BaseClient):
     """交易操作客户端方法集合，对应 /api/trading/* 端点。"""
 
     def place_order(
@@ -460,3 +461,97 @@ class TradingMixin:
             "deal_list": deal_list,
             "account_id": account_id,
         })
+
+    def smart_algo_order_async(
+        self,
+        stock_code: str,
+        order_type: int,
+        order_volume: int,
+        algo_name: str,
+        start_time: str = "",
+        end_time: str = "",
+        algo_param: dict | None = None,
+        price_type: int = 5,
+        price: float = 0.0,
+        strategy_name: str = "",
+        order_remark: str = "",
+        account_id: str = "",
+    ) -> dict:
+        """算法交易异步下单。
+
+        底层调用 ``XtQuantTrader.smart_algo_order_async()``，由 MiniQMT 按算法
+        拆分委托在指定时间区间内执行。
+
+        Args:
+            stock_code: 证券代码，如 ``"600000.SH"``
+            order_type: 委托类型 — 23=买入, 24=卖出
+            order_volume: 委托数量
+            algo_name: 算法名称，可用 ``get_smart_algo_param()`` 查询
+            start_time: 算法执行起始时间，格式 ``"HH:MM:SS"``（如 ``"09:30:00"``）。
+                xtquant 会与**当天日期**组合，因此只能指定当日时段
+            end_time: 算法执行截止时间，同样为 ``"HH:MM:SS"``，必须晚于 start_time
+            algo_param: 算法参数字典
+            price_type: 报价类型
+            price: 委托价格，市价类报价传 0
+            strategy_name: 策略名称
+            order_remark: 委托备注
+            account_id: 交易账户 ID
+
+        Returns:
+            包含 ``seq`` 的异步受理结果；最终回报经 ``/ws/trade`` 推送
+        """
+        return self._post("/api/trading/smart_algo_order_async", {
+            "stock_code": stock_code,
+            "order_type": order_type,
+            "order_volume": order_volume,
+            "algo_name": algo_name,
+            "start_time": start_time,
+            "end_time": end_time,
+            "algo_param": algo_param or {},
+            "price_type": price_type,
+            "price": price,
+            "strategy_name": strategy_name,
+            "order_remark": order_remark,
+            "account_id": account_id,
+        })
+
+    def cancel_smart_algo_task_async(self, task_id: int, account_id: str = "") -> dict:
+        """撤销算法交易任务。
+
+        Args:
+            task_id: 算法交易任务号
+            account_id: 交易账户 ID
+
+        Returns:
+            包含 ``seq`` 的异步受理结果；最终回报经 ``/ws/trade`` 推送
+        """
+        return self._post("/api/trading/smart_algo_task_cancel_async", {
+            "task_id": task_id,
+            "account_id": account_id,
+        })
+
+    def query_smart_algo_task(self, account_id: str = "") -> list:
+        """查询当日算法交易任务。
+
+        Args:
+            account_id: 交易账户 ID
+
+        Returns:
+            算法交易任务列表
+        """
+        resp = self._get("/api/trading/smart_algo_task", {"account_id": account_id})
+        return resp.get("data", [])
+
+    def get_smart_algo_param(self, algo_names: list[str]) -> dict:
+        """查询算法参数说明。
+
+        Args:
+            algo_names: 算法名称列表
+
+        Returns:
+            算法参数说明字典
+        """
+        resp = self._get("/api/trading/smart_algo_param", {
+            "algo_names": ",".join(algo_names),
+        })
+        return resp.get("data", {})

@@ -7,9 +7,10 @@
 
 底层对应 xtquant 的 ``xtdata.get_instrument_detail()`` 等函数。
 """
+from .base import BaseClient
 
 
-class UtilityMixin:
+class UtilityMixin(BaseClient):
     """工具类客户端方法集合，对应 /api/utility/* 端点。"""
 
     def get_stock_name(self, stock: str) -> str:
@@ -71,3 +72,4 @@ class UtilityMixin:
             "limit": limit,
         })
         return resp.get("stocks", [])
+

@@ -8,7 +8,6 @@
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # 数据下载模型
 # ---------------------------------------------------------------------------
@@ -49,19 +48,12 @@ class FinancialDownload2Request(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-class HisSTDataDownloadRequest(BaseModel):
-    """历史 ST 数据下载请求。"""
+class TabularDataDownloadRequest(BaseModel):
+    """表格数据下载请求。"""
     stock_list: list[str] = Field(default=[], alias="stocks")
     period: str = "1d"
     start_time: str = ""
     end_time: str = ""
-
-    model_config = {"populate_by_name": True}
-
-
-class TabularDataDownloadRequest(BaseModel):
-    """表格数据下载请求。"""
-    table_list: list[str] = Field(default=[], alias="tables")
 
     model_config = {"populate_by_name": True}
 
@@ -73,6 +65,8 @@ class TabularDataDownloadRequest(BaseModel):
 class CreateSectorFolderRequest(BaseModel):
     """创建板块分类文件夹请求。"""
     folder_name: str
+    parent_node: str = ""
+    overwrite: bool = True
 
 
 class CreateSectorRequest(BaseModel):
@@ -304,22 +298,23 @@ class CallFormulaRequest(BaseModel):
 
 class CallFormulaBatchRequest(BaseModel):
     """批量股票公式计算请求。"""
-    formula_name: str
+    formula_names: list[str]
     stock_codes: list[str]
     period: str = "1d"
     start_time: str = ""
     end_time: str = ""
     count: int = -1
     dividend_type: str = "none"
-    params: dict = {}
+    extend_params: list[dict] = []
 
 
 class GenerateIndexDataRequest(BaseModel):
     """自定义指数数据生成请求。"""
-    index_code: str
+    formula_name: str
+    formula_param: dict = {}
     stock_list: list[str] = Field(default=[], alias="stocks")
-    weights: list[float]
     period: str = "1d"
+    dividend_type: str = "none"
     start_time: str = ""
     end_time: str = ""
 
@@ -329,12 +324,13 @@ class GenerateIndexDataRequest(BaseModel):
 class CreateFormulaRequest(BaseModel):
     """创建公式请求。"""
     formula_name: str
-    formula_file: str
-    formula_type: str = ""
+    formula_content: str
+    formula_params: dict = {}
 
 
 class ImportFormulaRequest(BaseModel):
     """导入公式请求。"""
+    formula_name: str
     formula_file: str
 
 
@@ -390,3 +386,36 @@ class SyncTransactionRequest(BaseModel):
     operation: str
     data_type: str
     deal_list: list[dict] = []
+
+
+# ---------------------------------------------------------------------------
+# 算法交易模型（对齐 xttrader 真实签名）
+# ---------------------------------------------------------------------------
+
+class SmartAlgoOrderRequest(BaseModel):
+    """算法交易异步下单请求。
+
+    对应 ``XtQuantTrader.smart_algo_order_async()``。与普通下单的差别在于
+    需要指定算法名、执行时间区间和算法参数。
+    """
+    account_id: str = ""
+    stock_code: str
+    order_type: int
+    order_volume: int
+    price_type: int = 5
+    price: float = 0.0
+    strategy_name: str = ""
+    order_remark: str = ""
+    algo_name: str
+    start_time: str = ""
+    end_time: str = ""
+    algo_param: dict = {}
+
+
+class SmartAlgoTaskCancelRequest(BaseModel):
+    """算法交易任务撤销请求。
+
+    对应 ``XtQuantTrader.cancel_smart_algo_task_async()``。
+    """
+    account_id: str = ""
+    task_id: int

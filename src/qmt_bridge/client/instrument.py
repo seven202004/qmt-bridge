@@ -10,9 +10,10 @@
 底层对应 xtquant 的 ``xtdata.get_instrument_detail()``、
 ``xtdata.get_instrument_type()``、``xtdata.get_index_weight()`` 等函数。
 """
+from .base import BaseClient
 
 
-class InstrumentMixin:
+class InstrumentMixin(BaseClient):
     """合约/证券信息客户端方法集合，对应 /api/instrument/* 端点。"""
 
     def get_batch_instrument_detail(
@@ -100,3 +101,4 @@ class InstrumentMixin:
         """
         resp = self._get("/api/instrument/his_st_data", {"stock": stock})
         return resp.get("data", {})
+

@@ -1,7 +1,7 @@
 """QMT Bridge 可视化仪表盘 — 入口页面 + 侧边栏连接配置。"""
 
 import streamlit as st
-from _sidebar import render_sidebar
+from _sidebar import render_sidebar, report_error
 
 st.set_page_config(
     page_title="QMT Bridge 仪表盘",
@@ -76,4 +76,4 @@ if st.session_state.get("connected"):
             connected = status.get("connected", False) if isinstance(status, dict) else False
             st.metric("数据连接", "已连接" if connected else "未连接")
     except Exception as e:
-        st.warning(f"获取概览信息失败: {e}")
+        report_error("获取概览信息失败", e, as_warning=True)

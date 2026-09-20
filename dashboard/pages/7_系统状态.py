@@ -3,11 +3,11 @@
 import sys
 from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _sidebar import require_client
+from _sidebar import report_error, require_client
 
 st.set_page_config(page_title="系统状态 - QMT Bridge", layout="wide")
 st.title("系统状态")
@@ -24,7 +24,7 @@ if st.button("运行健康检查", key="btn_health"):
         st.success("服务正常")
         st.json(health)
     except Exception as e:
-        st.error(f"健康检查失败: {e}")
+        report_error("健康检查失败", e)
 
 st.markdown("---")
 
@@ -36,14 +36,14 @@ with col1:
         version = client.get_server_version()
         st.metric("QMT Bridge 服务端版本", version)
     except Exception as e:
-        st.error(f"获取服务端版本失败: {e}")
+        report_error("获取服务端版本失败", e)
 
 with col2:
     try:
         xtdata_ver = client.get_xtdata_version()
         st.metric("xtquant / xtdata 版本", xtdata_ver)
     except Exception as e:
-        st.error(f"获取 xtdata 版本失败: {e}")
+        report_error("获取 xtdata 版本失败", e)
 
 st.markdown("---")
 
@@ -56,14 +56,14 @@ if st.button("刷新连接状态", key="btn_conn_status"):
         status = client.get_connection_status()
         st.json(status)
     except Exception as e:
-        st.error(f"获取连接状态失败: {e}")
+        report_error("获取连接状态失败", e)
 
 if st.button("行情服务器状态", key="btn_quote_status"):
     try:
         status = client.get_quote_server_status()
         st.json(status)
     except Exception as e:
-        st.error(f"获取行情服务器状态失败: {e}")
+        report_error("获取行情服务器状态失败", e)
 
 st.markdown("---")
 
@@ -88,7 +88,7 @@ if st.button("获取可用市场", key="btn_markets"):
             else:
                 st.json(data)
     except Exception as e:
-        st.error(f"获取市场列表失败: {e}")
+        report_error("获取市场列表失败", e)
 
 st.markdown("---")
 
@@ -108,7 +108,7 @@ if st.button("获取可用周期", key="btn_periods"):
             else:
                 st.json(periods)
     except Exception as e:
-        st.error(f"获取周期列表失败: {e}")
+        report_error("获取周期列表失败", e)
 
 st.markdown("---")
 
@@ -123,4 +123,4 @@ if st.button("查询最后交易日", key="btn_last_trade_date"):
         last_date = client.get_last_trade_date(ltd_market)
         st.info(f"市场 {ltd_market} 最后交易日: **{last_date}**")
     except Exception as e:
-        st.error(f"查询失败: {e}")
+        report_error("查询失败", e)

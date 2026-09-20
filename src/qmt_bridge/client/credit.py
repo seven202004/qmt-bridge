@@ -2,6 +2,8 @@
 
 对齐 xttrader 真实信用交易 API：
 - credit_order — 信用下单（通过 order_type 常量区分融资/融券）
+- cancel_credit_order — 信用账户撤单
+- query_credit_orders — 查询信用账户当日委托
 - query_credit_positions — 查询信用持仓
 - query_credit_detail — 查询信用账户资产详情
 - query_stk_compacts — 查询信用负债合约
@@ -11,9 +13,10 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的信用交易方法。
 """
+from .base import BaseClient
 
 
-class CreditMixin:
+class CreditMixin(BaseClient):
     """两融交易客户端方法集合，对应 /api/credit/* 端点。"""
 
     def credit_order(
@@ -53,6 +56,37 @@ class CreditMixin:
             "strategy_name": strategy_name,
             "order_remark": order_remark,
             "account_id": account_id,
+        })
+
+    def cancel_credit_order(self, order_id: int, account_id: str = "") -> dict:
+        """信用账户撤单。
+
+        Args:
+            order_id: 要撤销的委托 ID
+            account_id: 信用资金账号
+
+        Returns:
+            撤单结果（``data`` 为返回码，0=成功）
+        """
+        return self._post("/api/credit/cancel", {
+            "order_id": order_id,
+            "account_id": account_id,
+        })
+
+    def query_credit_orders(self, account_id: str = "",
+                            cancelable_only: bool = False) -> dict:
+        """查询信用账户当日委托。
+
+        Args:
+            account_id: 交易账户 ID
+            cancelable_only: 仅返回可撤委托
+
+        Returns:
+            信用账户委托列表
+        """
+        return self._get("/api/credit/orders", {
+            "account_id": account_id,
+            "cancelable_only": cancelable_only,
         })
 
     def query_credit_positions(self, account_id: str = "") -> dict:

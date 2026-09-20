@@ -581,6 +581,19 @@ qmt-bridge/
 └── tests/                          # 测试
 ```
 
+## 开发与本地门禁
+
+```bash
+just install-all   # 安装全部依赖（服务端 + 文档 + 仪表盘）
+just verify        # 一条命令跑完：ruff check / ruff format --check / mypy / pytest
+```
+
+仓库的 GitHub Actions 目前没有运行记录，实际起作用的是本地门禁：
+
+- `just verify`（等价于 `sh scripts/verify.sh`，自动识别 `.venv` 解释器）
+- **git pre-push hook**：新克隆的仓库需执行一次
+  `git config core.hooksPath .githooks` 才会生效；临时跳过用 `git push --no-verify`
+
 ## Authentication
 
 QMT Bridge 支持可选的 API Key 认证机制：

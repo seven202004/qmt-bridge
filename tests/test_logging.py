@@ -237,6 +237,52 @@ def test_capture_uvicorn_replaces_foreign_handlers(tmp_path):
         logging.getLogger("uvicorn.error").removeHandler(foreign)
 
 
+def test_real_uvicorn_lifecycle_lands_in_log_file(tmp_path):
+    """真起一个 uvicorn：启动横幅与优雅关闭都必须落盘。
+
+    这是「接管 uvicorn 日志」的端到端证明 —— 单看 handler 有没有挂上，
+    证明不了 ``log_config=None`` 之后 uvicorn 不会把自己的配置刷回来。
+    """
+    log_file = tmp_path / "uvicorn.log"
+    setup_logging(level="info", log_file=str(log_file))
+
+    server = uvicorn.Server(
+        uvicorn.Config(
+            FastAPI(),  # 端口交 0 让系统分配，避免与本机其它服务撞车
+            host="127.0.0.1",
+            port=0,
+            log_level="info",
+            access_log=False,
+            log_config=None,
+        )
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        assert _wait_until(lambda: server.started), "uvicorn 未能在 10s 内启动"
+    finally:
+        server.should_exit = True
+        thread.join(timeout=10)
+
+    for handler in logging.getLogger("uvicorn.error").handlers:
+        handler.flush()
+
+    text = log_file.read_text(encoding="utf-8")
+    assert "Uvicorn running on" in text, text  # 启动横幅（原先只在控制台）
+    assert "Application startup complete" in text  # 生命周期
+    assert "Shutting down" in text  # 优雅关闭
+
+
+def _wait_until(predicate, timeout: float = 10.0) -> bool:
+    """轮询等条件成立（服务端起停是异步的，断言不能抢跑）。"""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.05)
+    return False
+
+
 # --------------------------------------------------------------------------- 访问日志
 
 

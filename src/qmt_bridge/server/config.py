@@ -72,6 +72,9 @@ class Settings:
     log_file: str = ""  # 日志文件路径，为空表示只输出到控制台
     log_max_bytes: int = 10 * 1024 * 1024  # 单文件大小上限，超过后轮转（默认 10MB）
     log_backup_count: int = 5  # 保留的历史日志文件数量
+    # 是否同时输出到控制台。被父进程以文件重定向方式拉起时置 false：
+    # 那些 stdout/stderr 落不进 RotatingFileHandler，会变成一份无法轮转的副本。
+    log_console: bool = True
     log_access: bool = True  # 是否输出每个 HTTP 请求的访问日志
 
     # ---- 安全认证配置 ----
@@ -130,6 +133,8 @@ class Settings:
                 os.environ.get("QMT_BRIDGE_LOG_MAX_BYTES", str(10 * 1024 * 1024))
             ),
             log_backup_count=int(os.environ.get("QMT_BRIDGE_LOG_BACKUP_COUNT", "5")),
+            log_console=os.environ.get("QMT_BRIDGE_LOG_CONSOLE", "true").lower()
+            in ("1", "true", "yes"),
             log_access=os.environ.get("QMT_BRIDGE_LOG_ACCESS", "true").lower()
             not in ("0", "false", "no"),
             api_key=os.environ.get("QMT_BRIDGE_API_KEY", ""),

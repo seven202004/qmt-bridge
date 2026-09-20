@@ -149,6 +149,7 @@ def setup_logging(
     log_file: str = "",
     max_bytes: int = 10 * 1024 * 1024,
     backup_count: int = 5,
+    console: bool = True,
 ) -> logging.Logger:
     """配置 ``qmt_bridge`` 与 uvicorn 的 logger（控制台 + 可选轮转文件），可重复调用。
 
@@ -157,6 +158,8 @@ def setup_logging(
         log_file: 日志文件路径；为空表示只输出到控制台。
         max_bytes: 单个日志文件大小上限，超过后轮转。
         backup_count: 保留的历史日志文件数量。
+        console: 是否输出到控制台。由父进程重定向拉起时传 False —— 重定向的
+            stdout/stderr 无法轮转，留着只会产生一份无限增长的日志副本。
 
     Returns:
         配置完成的 ``qmt_bridge`` logger。
@@ -172,12 +175,13 @@ def setup_logging(
     request_filter = RequestIdFilter()
     handlers: list[logging.Handler] = []
 
-    console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter(CONSOLE_FORMAT, DATE_FORMAT))
-    console.addFilter(request_filter)
-    setattr(console, _HANDLER_MARK, True)
-    logger.addHandler(console)
-    handlers.append(console)
+    if console:
+        stream = logging.StreamHandler()
+        stream.setFormatter(logging.Formatter(CONSOLE_FORMAT, DATE_FORMAT))
+        stream.addFilter(request_filter)
+        setattr(stream, _HANDLER_MARK, True)
+        logger.addHandler(stream)
+        handlers.append(stream)
 
     if log_file:
         path = Path(log_file)

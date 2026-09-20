@@ -189,6 +189,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         log_file=settings.log_file,
         max_bytes=settings.log_max_bytes,
         backup_count=settings.log_backup_count,
+        console=settings.log_console,
     )
     logger.info(
         "启动配置: host=%s port=%s workers=%s log_level=%s log_file=%s "

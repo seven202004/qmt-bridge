@@ -120,6 +120,7 @@ def main():
         log_file=settings.log_file,
         max_bytes=settings.log_max_bytes,
         backup_count=settings.log_backup_count,
+        console=settings.log_console,
     )
     # 进程级启动记录：日志文件里据此判断「服务什么时候起的、哪个版本、哪个进程」
     logger.info(
@@ -193,6 +194,7 @@ def scheduler_main():
         log_file=settings.log_file,
         max_bytes=settings.log_max_bytes,
         backup_count=settings.log_backup_count,
+        console=settings.log_console,
     )
     app_logger.info(
         "qmt-scheduler v%s 启动 (pid=%d, python=%s)",

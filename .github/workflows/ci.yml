@@ -31,3 +31,26 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v
         if: hashFiles('tests/') != ''
+
+  lint:
+    name: Lint & type check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package and tools
+        run: |
+          pip install -e ".[server,ws]"
+          pip install ruff mypy
+
+      - name: Run ruff
+        run: python -m ruff check src/ tests/ dashboard/
+
+      - name: Run mypy
+        run: python -m mypy src/qmt_bridge/

@@ -123,6 +123,10 @@ test *ARGS:
 test-v:
     python -m pytest tests/ -v
 
+# 审计 xtquant 原生 API 封装（需要已安装 xtquant 的 MiniQMT 环境）
+audit-api:
+    python scripts/audit_xtquant_api.py
+
 # ─────────────────────────── 代码质量 ───────────────────────
 
 # 类型检查（需要 mypy）
@@ -135,7 +139,7 @@ fmt:
 
 # 代码检查（需要 ruff）
 lint:
-    python -m ruff check src/ tests/
+    python -m ruff check src/ tests/ dashboard/
 
 # 格式化 + 检查
 check: fmt lint

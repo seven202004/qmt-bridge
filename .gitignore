@@ -60,3 +60,6 @@ site/
 
 # OH-MY-CODEX runtime state
 .omx/
+
+# Agent / 审计临时工作区（xtquant wheel、隔离 venv、验证脚本）
+.tmp/

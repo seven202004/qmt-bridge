@@ -36,7 +36,7 @@ class GenericWebhookBackend(NotifierBackend):
         """
         self._url = webhook_url
         self._secret = secret
-        self._client = None  # type: ignore[assignment]
+        self._client = None
 
     def name(self) -> str:
         """返回后端名称标识。"""

@@ -50,7 +50,7 @@ class FeishuWebhookBackend(NotifierBackend):
         """
         self._url = webhook_url
         self._secret = secret
-        self._client = None  # type: ignore[assignment]
+        self._client = None
         self._last_send: float = 0.0
         self._lock = asyncio.Lock()
 

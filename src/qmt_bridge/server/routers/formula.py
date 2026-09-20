@@ -6,9 +6,7 @@
 
 from fastapi import APIRouter, Query
 from xtquant import xtdata
-from xtquant.qmttools.functions import (  # type: ignore[import-untyped]
-    call_formula_batch as _call_formula_batch,
-)
+from xtquant.qmttools.functions import call_formula_batch as _call_formula_batch
 
 from ..helpers import _numpy_to_python, ok_response
 from ..models import (

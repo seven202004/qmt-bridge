@@ -76,6 +76,14 @@ packages = ["src/qmt_bridge"]
 include = ["src/qmt_bridge", "tests", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.mypy]
+# 让检查覆盖"没写注解的函数体"：否则项目里大量未标注函数等于逃过类型检查。
+check_untyped_defs = true
+# 过期/多余的 type: ignore 与无意义的 cast 本身就是错误信息，别留着误导人。
+warn_unused_ignores = true
+warn_redundant_casts = true
+# 不同类型之间比较通常是笔误（如 str 与 int）。
+strict_equality = true
+# 不开 warn_return_any：xtquant 没有 stub，返回值天然是 Any，开了就是 60 条噪音。
 # xtquant / bson 随 miniQMT 客户端分发（PyPI 上没有，也没有 stub），
 # httpx 只在通知模块按需导入，pandas 无 stub。
 # 这些"找不到实现/缺 stub"的噪音会把真正的类型错误淹掉，统一忽略。

@@ -6,6 +6,7 @@
 底层对应 xtquant 的 ``xtdata.get_financial_data()``、
 ``xtdata.get_metatable_list()``、``xtdata.get_tabular_formula()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -33,12 +34,15 @@ class TabularMixin(BaseClient):
         Returns:
             查询结果（以股票代码为键的字典）
         """
-        resp = self._get("/api/tabular/data", {
-            "table_name": table_name,
-            "stocks": ",".join(stocks) if stocks else "",
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/tabular/data",
+            {
+                "table_name": table_name,
+                "stocks": ",".join(stocks) if stocks else "",
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})
 
     def list_tables(self) -> dict:
@@ -79,13 +83,16 @@ class TabularMixin(BaseClient):
         Returns:
             公式表格数据
         """
-        resp = self._get("/api/tabular/formula", {
-            "fields": ",".join(fields),
-            "stocks": ",".join(stocks) if stocks else "",
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-        })
+        resp = self._get(
+            "/api/tabular/formula",
+            {
+                "fields": ",".join(fields),
+                "stocks": ",".join(stocks) if stocks else "",
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+            },
+        )
         return resp.get("data", {})

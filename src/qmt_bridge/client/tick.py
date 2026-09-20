@@ -8,6 +8,7 @@
 
 注意: L2 数据需要开通 Level-2 行情权限才能获取。
 """
+
 from .base import BaseClient
 
 
@@ -31,12 +32,15 @@ class TickMixin(BaseClient):
         Returns:
             L2 行情快照数据字典
         """
-        resp = self._get("/api/tick/l2_quote", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
+        resp = self._get(
+            "/api/tick/l2_quote",
+            {
+                "stock": stock,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+            },
+        )
         return resp.get("data", {})
 
     def get_l2_order(
@@ -56,12 +60,15 @@ class TickMixin(BaseClient):
         Returns:
             逐笔委托数据字典
         """
-        resp = self._get("/api/tick/l2_order", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
+        resp = self._get(
+            "/api/tick/l2_order",
+            {
+                "stock": stock,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+            },
+        )
         return resp.get("data", {})
 
     def get_l2_transaction(
@@ -81,12 +88,15 @@ class TickMixin(BaseClient):
         Returns:
             逐笔成交数据字典
         """
-        resp = self._get("/api/tick/l2_transaction", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
+        resp = self._get(
+            "/api/tick/l2_transaction",
+            {
+                "stock": stock,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+            },
+        )
         return resp.get("data", {})
 
     def get_l2_thousand_queue(
@@ -106,11 +116,14 @@ class TickMixin(BaseClient):
         Returns:
             千档委托队列数据字典
         """
-        resp = self._get("/api/tick/l2_thousand_queue", {
-            "stock": stock,
-            "gear_num": gear_num,
-            "price": price,
-        })
+        resp = self._get(
+            "/api/tick/l2_thousand_queue",
+            {
+                "stock": stock,
+                "gear_num": gear_num,
+                "price": price,
+            },
+        )
         return resp.get("data", {})
 
     def get_broker_queue(self, stocks: list[str]) -> dict:
@@ -151,12 +164,15 @@ class TickMixin(BaseClient):
         Returns:
             委托排名数据字典
         """
-        resp = self._get("/api/tick/order_rank", {
-            "stock": stock,
-            "order_time": order_time,
-            "order_type": order_type,
-            "order_price": order_price,
-            "order_volume": order_volume,
-            "order_left_volume": order_left_volume,
-        })
+        resp = self._get(
+            "/api/tick/order_rank",
+            {
+                "stock": stock,
+                "order_time": order_time,
+                "order_type": order_type,
+                "order_price": order_price,
+                "order_volume": order_volume,
+                "order_left_volume": order_left_volume,
+            },
+        )
         return resp.get("data", {})

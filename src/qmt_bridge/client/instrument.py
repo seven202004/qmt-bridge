@@ -10,6 +10,7 @@
 底层对应 xtquant 的 ``xtdata.get_instrument_detail()``、
 ``xtdata.get_instrument_type()``、``xtdata.get_index_weight()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -31,10 +32,13 @@ class InstrumentMixin(BaseClient):
         Returns:
             以合约代码为键的详情字典
         """
-        resp = self._get("/api/instrument/detail_list", {
-            "stocks": ",".join(stocks),
-            "iscomplete": iscomplete,
-        })
+        resp = self._get(
+            "/api/instrument/detail_list",
+            {
+                "stocks": ",".join(stocks),
+                "iscomplete": iscomplete,
+            },
+        )
         return resp.get("data", {})
 
     def get_instrument_type(self, stock: str) -> str:
@@ -65,10 +69,13 @@ class InstrumentMixin(BaseClient):
         Returns:
             IPO 信息字典
         """
-        resp = self._get("/api/instrument/ipo_info", {
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/instrument/ipo_info",
+            {
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})
 
     def get_index_weight(self, index_code: str) -> dict:
@@ -101,4 +108,3 @@ class InstrumentMixin(BaseClient):
         """
         resp = self._get("/api/instrument/his_st_data", {"stock": stock})
         return resp.get("data", {})
-

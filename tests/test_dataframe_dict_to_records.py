@@ -48,14 +48,18 @@ def test_unnamed_index_uses_index_column_name():
 
 def test_empty_and_non_dataframe_values():
     """空 DataFrame 与非 DataFrame 值都返回空列表（保持既有行为）。"""
-    assert _dataframe_dict_to_records({"000001.SZ": pd.DataFrame()}) == {"000001.SZ": []}
+    assert _dataframe_dict_to_records({"000001.SZ": pd.DataFrame()}) == {
+        "000001.SZ": []
+    }
     assert _dataframe_dict_to_records({"000001.SZ": None}) == {"000001.SZ": []}
     assert _dataframe_dict_to_records({}) == {}
 
 
 def test_nan_becomes_none_through_records():
     """记录内的 NaN 仍转 None（沿用 _numpy_to_python 语义）。"""
-    df = pd.DataFrame({"close": [float("nan")]}, index=pd.Index(["20240101"], name="time"))
+    df = pd.DataFrame(
+        {"close": [float("nan")]}, index=pd.Index(["20240101"], name="time")
+    )
     out = _dataframe_dict_to_records({"000001.SZ": df})
     assert out == {"000001.SZ": [{"time": "20240101", "close": None}]}
 

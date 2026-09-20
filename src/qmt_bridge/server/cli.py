@@ -124,7 +124,10 @@ def main():
     # 进程级启动记录：日志文件里据此判断「服务什么时候起的、哪个版本、哪个进程」
     logger.info(
         "qmt-server v%s 启动 (pid=%d, python=%s, cwd=%s)",
-        __version__, os.getpid(), sys.version.split()[0], Path.cwd(),
+        __version__,
+        os.getpid(),
+        sys.version.split()[0],
+        Path.cwd(),
     )
 
     import uvicorn
@@ -193,7 +196,9 @@ def scheduler_main():
     )
     app_logger.info(
         "qmt-scheduler v%s 启动 (pid=%d, python=%s)",
-        __version__, os.getpid(), sys.version.split()[0],
+        __version__,
+        os.getpid(),
+        sys.version.split()[0],
     )
 
     from .downloader import DownloadSchedulerState

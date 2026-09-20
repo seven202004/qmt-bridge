@@ -15,6 +15,7 @@
     - ``"Top10flowholder"``: 十大流通股东表
     - ``"Pershareindex"``: 每股指标表
 """
+
 from .base import BaseClient
 
 
@@ -46,13 +47,16 @@ class FinancialMixin(BaseClient):
         Returns:
             嵌套字典 ``{stock: {table: [records]}}``
         """
-        resp = self._get("/api/financial/data", {
-            "stocks": ",".join(stocks),
-            "tables": ",".join(tables) if tables else "",
-            "start_time": start_time,
-            "end_time": end_time,
-            "report_type": report_type,
-        })
+        resp = self._get(
+            "/api/financial/data",
+            {
+                "stocks": ",".join(stocks),
+                "tables": ",".join(tables) if tables else "",
+                "start_time": start_time,
+                "end_time": end_time,
+                "report_type": report_type,
+            },
+        )
         return resp.get("data", {})
 
     def download_financial(
@@ -76,12 +80,15 @@ class FinancialMixin(BaseClient):
         Returns:
             下载任务状态信息
         """
-        return self._post("/api/download/financial_data", {
-            "stocks": stocks,
-            "tables": tables or [],
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        return self._post(
+            "/api/download/financial_data",
+            {
+                "stocks": stocks,
+                "tables": tables or [],
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
 
     def get_financial_data_ori(
         self,
@@ -103,11 +110,14 @@ class FinancialMixin(BaseClient):
         Returns:
             原始格式财务数据
         """
-        resp = self._get("/api/financial/data_ori", {
-            "stocks": ",".join(stocks),
-            "tables": ",".join(tables) if tables else "",
-            "start_time": start_time,
-            "end_time": end_time,
-            "report_type": report_type,
-        })
+        resp = self._get(
+            "/api/financial/data_ori",
+            {
+                "stocks": ",".join(stocks),
+                "tables": ",".join(tables) if tables else "",
+                "start_time": start_time,
+                "end_time": end_time,
+                "report_type": report_type,
+            },
+        )
         return resp.get("data", {})

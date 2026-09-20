@@ -511,7 +511,11 @@ def test_failed_order_keeps_parameters_and_traceback(tmp_path):
     record = records[0]
     message = record.getMessage()
     assert "交易失败 同步下单" in message
-    assert "600000.SH" in message and "order_volume=100" in message and "price=10.5" in message
+    assert (
+        "600000.SH" in message
+        and "order_volume=100" in message
+        and "price=10.5" in message
+    )
     assert record.exc_info is not None and "拒单" in str(record.exc_info[1])
 
 
@@ -665,7 +669,9 @@ def test_ws_realtime_logs_what_was_subscribed(monkeypatch):
     setup_logging(level="debug", log_file="")
     fake = _FakeXtdata()
     monkeypatch.setitem(sys.modules, "xtquant", types.ModuleType("xtquant"))
-    monkeypatch.setitem(sys.modules, "xtquant.xtdata", types.ModuleType("xtquant.xtdata"))
+    monkeypatch.setitem(
+        sys.modules, "xtquant.xtdata", types.ModuleType("xtquant.xtdata")
+    )
     from qmt_bridge.server.ws import realtime
 
     monkeypatch.setattr(realtime, "xtdata", fake)
@@ -680,11 +686,7 @@ def test_ws_realtime_logs_what_was_subscribed(monkeypatch):
         assert fake.on_subscribe.wait(5), "服务端没有发起订阅"
         _wait_for_record(records, "行情订阅已建立")
 
-    line = next(
-        r.getMessage()
-        for r in records
-        if "行情订阅已建立" in r.getMessage()
-    )
+    line = next(r.getMessage() for r in records if "行情订阅已建立" in r.getMessage())
     assert "000001.SZ" in line and "600000.SH" in line and "1m" in line
     # 断开时那行仍要看得到订阅数
     assert any("行情订阅客户端断开" in r.getMessage() for r in records)
@@ -795,7 +797,9 @@ def test_download_endpoint_logs_what_was_requested(monkeypatch):
     from qmt_bridge.server.routers import download as download_router
 
     monkeypatch.setattr(
-        download_router, "download_history_data2_safe", lambda *args, **kwargs: {"ok": 2}
+        download_router,
+        "download_history_data2_safe",
+        lambda *args, **kwargs: {"ok": 2},
     )
     app = FastAPI()
     app.include_router(download_router.router)

@@ -4,6 +4,7 @@
 
 底层对应 xtquant 的 ``xtdata.get_cb_info()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -30,4 +31,3 @@ class CBMixin(BaseClient):
         """
         resp = self._get("/api/cb/info", {"stock": stock})
         return resp.get("data", {})
-

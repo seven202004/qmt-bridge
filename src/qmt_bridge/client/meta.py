@@ -8,6 +8,7 @@
 
 用于监控服务端运行状态和获取系统配置信息。
 """
+
 from .base import BaseClient
 
 
@@ -113,4 +114,3 @@ class MetaMixin(BaseClient):
             行情服务器状态详情字典
         """
         return self._get("/api/meta/quote_server_status")
-

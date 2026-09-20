@@ -7,6 +7,7 @@
 注意: 使用前需先调用 ``download_metatable_data()`` 下载合约元数据表，
 否则无法正确识别期货品种和合约。
 """
+
 from .base import BaseClient
 
 
@@ -30,11 +31,14 @@ class FuturesMixin(BaseClient):
         Returns:
             主力合约数据字典，包含各时间点对应的主力合约代码
         """
-        resp = self._get("/api/futures/main_contract", {
-            "code_market": code_market,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/futures/main_contract",
+            {
+                "code_market": code_market,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})
 
     def get_sec_main_contract(
@@ -53,9 +57,12 @@ class FuturesMixin(BaseClient):
         Returns:
             次主力合约数据字典
         """
-        resp = self._get("/api/futures/sec_main_contract", {
-            "code_market": code_market,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/futures/sec_main_contract",
+            {
+                "code_market": code_market,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})

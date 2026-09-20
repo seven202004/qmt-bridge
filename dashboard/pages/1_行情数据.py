@@ -24,9 +24,13 @@ col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
 with col1:
     stock_code = st.text_input("股票代码", value="000001.SZ", key="kline_stock")
 with col2:
-    period = st.selectbox("周期", ["1d", "1w", "1m", "5m", "15m", "30m", "60m"], key="kline_period")
+    period = st.selectbox(
+        "周期", ["1d", "1w", "1m", "5m", "15m", "30m", "60m"], key="kline_period"
+    )
 with col3:
-    count = st.number_input("条数", value=120, min_value=10, max_value=1000, step=10, key="kline_count")
+    count = st.number_input(
+        "条数", value=120, min_value=10, max_value=1000, step=10, key="kline_count"
+    )
 with col4:
     dividend_type = st.selectbox(
         "除权类型",
@@ -59,13 +63,17 @@ if st.button("查询 K 线", key="btn_kline"):
 
             x_axis = df["time"] if "time" in df.columns else df.index
 
-            fig = go.Figure(data=[go.Candlestick(
-                x=x_axis,
-                open=df["open"],
-                high=df["high"],
-                low=df["low"],
-                close=df["close"],
-            )])
+            fig = go.Figure(
+                data=[
+                    go.Candlestick(
+                        x=x_axis,
+                        open=df["open"],
+                        high=df["high"],
+                        low=df["low"],
+                        close=df["close"],
+                    )
+                ]
+            )
             fig.update_layout(
                 title=f"{stock_code} — {period} K 线",
                 xaxis_title="日期",
@@ -76,12 +84,18 @@ if st.button("查询 K 线", key="btn_kline"):
             st.plotly_chart(fig, use_container_width=True)
 
             if "volume" in df.columns:
-                vol_fig = go.Figure(data=[go.Bar(
-                    x=x_axis,
-                    y=df["volume"],
-                    marker_color="steelblue",
-                )])
-                vol_fig.update_layout(title="成交量", height=200, xaxis_rangeslider_visible=False)
+                vol_fig = go.Figure(
+                    data=[
+                        go.Bar(
+                            x=x_axis,
+                            y=df["volume"],
+                            marker_color="steelblue",
+                        )
+                    ]
+                )
+                vol_fig.update_layout(
+                    title="成交量", height=200, xaxis_rangeslider_visible=False
+                )
                 st.plotly_chart(vol_fig, use_container_width=True)
 
             with st.expander("查看原始数据"):

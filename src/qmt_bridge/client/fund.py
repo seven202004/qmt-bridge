@@ -8,6 +8,7 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的资金划转方法。
 """
+
 from .base import BaseClient
 
 
@@ -27,11 +28,14 @@ class FundMixin(BaseClient):
         Returns:
             划转结果
         """
-        return self._post("/api/fund/transfer", {
-            "transfer_direction": transfer_direction,
-            "amount": amount,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/fund/transfer",
+            {
+                "transfer_direction": transfer_direction,
+                "amount": amount,
+                "account_id": account_id,
+            },
+        )
 
     def ctp_transfer_option_to_future(
         self, opt_account_id: str, ft_account_id: str, balance: float
@@ -46,11 +50,14 @@ class FundMixin(BaseClient):
         Returns:
             划转结果
         """
-        return self._post("/api/fund/ctp_option_to_future", {
-            "opt_account_id": opt_account_id,
-            "ft_account_id": ft_account_id,
-            "balance": balance,
-        })
+        return self._post(
+            "/api/fund/ctp_option_to_future",
+            {
+                "opt_account_id": opt_account_id,
+                "ft_account_id": ft_account_id,
+                "balance": balance,
+            },
+        )
 
     def ctp_transfer_future_to_option(
         self, opt_account_id: str, ft_account_id: str, balance: float
@@ -65,11 +72,14 @@ class FundMixin(BaseClient):
         Returns:
             划转结果
         """
-        return self._post("/api/fund/ctp_future_to_option", {
-            "opt_account_id": opt_account_id,
-            "ft_account_id": ft_account_id,
-            "balance": balance,
-        })
+        return self._post(
+            "/api/fund/ctp_future_to_option",
+            {
+                "opt_account_id": opt_account_id,
+                "ft_account_id": ft_account_id,
+                "balance": balance,
+            },
+        )
 
     def secu_transfer(
         self,
@@ -91,10 +101,13 @@ class FundMixin(BaseClient):
         Returns:
             划转结果
         """
-        return self._post("/api/fund/secu_transfer", {
-            "transfer_direction": transfer_direction,
-            "stock_code": stock_code,
-            "volume": volume,
-            "transfer_type": transfer_type,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/fund/secu_transfer",
+            {
+                "transfer_direction": transfer_direction,
+                "stock_code": stock_code,
+                "volume": volume,
+                "transfer_type": transfer_type,
+                "account_id": account_id,
+            },
+        )

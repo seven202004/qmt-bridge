@@ -80,7 +80,9 @@ def get_option_list(
 
     底层调用: xtdata.get_option_list(undl_code, dedate, opttype=..., isavailavle=...)
     """
-    raw = xtdata.get_option_list(undl_code, dedate, opttype=opttype, isavailavle=isavailable)
+    raw = xtdata.get_option_list(
+        undl_code, dedate, opttype=opttype, isavailavle=isavailable
+    )
     return {"data": _numpy_to_python(raw)}
 
 
@@ -104,5 +106,3 @@ def get_his_option_list(
     """
     raw = xtdata.get_his_option_list(undl_code, dedate)
     return {"data": _numpy_to_python(raw)}
-
-

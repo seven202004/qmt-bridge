@@ -104,7 +104,10 @@ async def ws_realtime(ws: WebSocket):
         # 客户端说收不到行情时，先看这行确认服务端到底有没有按它的请求去订阅。
         logger.info(
             "行情订阅已建立 client=%s 周期=%s 复权=%s 股票=%d只 %s",
-            ws.client, period, dividend_type or "none", len(seq_ids),
+            ws.client,
+            period,
+            dividend_type or "none",
+            len(seq_ids),
             summarize_codes(stocks),
         )
 

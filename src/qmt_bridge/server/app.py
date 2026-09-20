@@ -144,8 +144,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     logger.info(
         "启动配置: host=%s port=%s workers=%s log_level=%s log_file=%s "
         "trading_enabled=%s notify_enabled=%s",
-        settings.host, settings.port, settings.workers, settings.log_level,
-        settings.log_file or "(仅控制台)", settings.trading_enabled, settings.notify_enabled,
+        settings.host,
+        settings.port,
+        settings.workers,
+        settings.log_level,
+        settings.log_file or "(仅控制台)",
+        settings.trading_enabled,
+        settings.notify_enabled,
     )
 
     app = FastAPI(

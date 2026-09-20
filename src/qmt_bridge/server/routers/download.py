@@ -63,8 +63,11 @@ def download_history_data2(req: BatchDownloadRequest):
     # 下载会长时间占用 xtdata 串行化锁（期间整个 /api 排队），必须记下"请求了什么"
     logger.info(
         "下载请求 历史行情: 周期=%s 区间=%s~%s 股票=%d只 %s",
-        req.period, req.start_time or "最早", req.end_time or "最新",
-        len(req.stock_list), summarize_codes(req.stock_list),
+        req.period,
+        req.start_time or "最早",
+        req.end_time or "最新",
+        len(req.stock_list),
+        summarize_codes(req.stock_list),
     )
     result = download_history_data2_safe(
         req.stock_list,
@@ -101,8 +104,11 @@ def download_financial_data(req: FinancialDownloadRequest):
     """
     logger.info(
         "下载请求 财务数据: 报表=%s 区间=%s~%s 股票=%d只 %s",
-        req.table_list or "全部", req.start_time or "最早", req.end_time or "最新",
-        len(req.stock_list), summarize_codes(req.stock_list),
+        req.table_list or "全部",
+        req.start_time or "最早",
+        req.end_time or "最新",
+        len(req.stock_list),
+        summarize_codes(req.stock_list),
     )
     xtdata.download_financial_data(
         req.stock_list,
@@ -233,7 +239,9 @@ def download_financial_data2(req: FinancialDownload2Request):
     """
     logger.info(
         "下载请求 财务数据v2(阻塞): 报表=%s 股票=%d只 %s",
-        req.table_list or "全部", len(req.stock_list), summarize_codes(req.stock_list),
+        req.table_list or "全部",
+        len(req.stock_list),
+        summarize_codes(req.stock_list),
     )
     xtdata.download_financial_data2(
         req.stock_list,
@@ -326,8 +334,11 @@ def download_tabular_data(req: TabularDataDownloadRequest):
     """
     logger.info(
         "下载请求 表格数据: 周期=%s 区间=%s~%s 股票=%d只 %s",
-        req.period, req.start_time or "最早", req.end_time or "最新",
-        len(req.stock_list), summarize_codes(req.stock_list),
+        req.period,
+        req.start_time or "最早",
+        req.end_time or "最新",
+        len(req.stock_list),
+        summarize_codes(req.stock_list),
     )
     result = xtdata.download_tabular_data(
         req.stock_list,

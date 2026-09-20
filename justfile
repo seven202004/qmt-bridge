@@ -135,7 +135,7 @@ typecheck:
 
 # 格式化代码（需要 ruff）
 fmt:
-    python -m ruff format src/ tests/
+    python -m ruff format src/ tests/ dashboard/
 
 # 代码检查（需要 ruff）
 lint:

@@ -46,7 +46,8 @@ async def broadcast_trade_event(event: dict):
     if dead:
         logger.debug(
             "交易事件推送失败，移除监听客户端 %d 个 (剩余 %d)",
-            len(dead), len(_trade_listeners) - len(dead),
+            len(dead),
+            len(_trade_listeners) - len(dead),
         )
         _trade_listeners.difference_update(dead)
 
@@ -89,20 +90,24 @@ async def ws_trade(
     # API 密钥验证
     if not settings.api_key:
         logger.warning(
-            "交易 WS 认证失败: 服务端未配置 API Key, 关闭连接 client=%s", ws.client,
+            "交易 WS 认证失败: 服务端未配置 API Key, 关闭连接 client=%s",
+            ws.client,
         )
         await ws.close(code=1008, reason="API key not configured on server")
         return
     if not api_key or not hmac.compare_digest(api_key, settings.api_key):
         logger.warning(
-            "交易 WS 认证失败: API Key 无效或缺失, 关闭连接 client=%s", ws.client,
+            "交易 WS 认证失败: API Key 无效或缺失, 关闭连接 client=%s",
+            ws.client,
         )
         await ws.close(code=1008, reason="Invalid API key")
         return
 
     await ws.accept()
     _trade_listeners.add(ws)
-    logger.info("交易 WS 客户端已连接 client=%s 监听数=%d", ws.client, len(_trade_listeners))
+    logger.info(
+        "交易 WS 客户端已连接 client=%s 监听数=%d", ws.client, len(_trade_listeners)
+    )
 
     try:
         while True:
@@ -113,4 +118,6 @@ async def ws_trade(
     finally:
         # 客户端断开时从监听列表中移除
         _trade_listeners.discard(ws)
-        logger.info("交易 WS 客户端已断开 client=%s 监听数=%d", ws.client, len(_trade_listeners))
+        logger.info(
+            "交易 WS 客户端已断开 client=%s 监听数=%d", ws.client, len(_trade_listeners)
+        )

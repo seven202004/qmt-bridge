@@ -11,6 +11,7 @@
     - 11: 限价
     - 42: 最优五档即时成交剩余撤销
 """
+
 from .base import BaseClient
 
 
@@ -43,16 +44,19 @@ class TradingMixin(BaseClient):
         Returns:
             包含 ``order_id`` 等委托结果的字典
         """
-        return self._post("/api/trading/order", {
-            "stock_code": stock_code,
-            "order_type": order_type,
-            "order_volume": order_volume,
-            "price_type": price_type,
-            "price": price,
-            "strategy_name": strategy_name,
-            "order_remark": order_remark,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/order",
+            {
+                "stock_code": stock_code,
+                "order_type": order_type,
+                "order_volume": order_volume,
+                "price_type": price_type,
+                "price": price,
+                "strategy_name": strategy_name,
+                "order_remark": order_remark,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_order(self, order_id: int, account_id: str = "") -> dict:
         """撤销委托。
@@ -64,10 +68,13 @@ class TradingMixin(BaseClient):
         Returns:
             撤单结果
         """
-        return self._post("/api/trading/cancel", {
-            "order_id": order_id,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/cancel",
+            {
+                "order_id": order_id,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_order_by_sysid(
         self, market: int, sysid: str, account_id: str = ""
@@ -82,11 +89,14 @@ class TradingMixin(BaseClient):
         Returns:
             撤单结果
         """
-        return self._post("/api/trading/cancel_by_sysid", {
-            "market": market,
-            "sysid": sysid,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/cancel_by_sysid",
+            {
+                "market": market,
+                "sysid": sysid,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_order_by_sysid_async(
         self, market: int, sysid: str, account_id: str = ""
@@ -101,11 +111,14 @@ class TradingMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/trading/cancel_by_sysid_async", {
-            "market": market,
-            "sysid": sysid,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/cancel_by_sysid_async",
+            {
+                "market": market,
+                "sysid": sysid,
+                "account_id": account_id,
+            },
+        )
 
     def query_orders(self, account_id: str = "", cancelable_only: bool = False) -> dict:
         """查询当日委托列表。
@@ -117,10 +130,13 @@ class TradingMixin(BaseClient):
         Returns:
             委托列表数据
         """
-        return self._get("/api/trading/orders", {
-            "account_id": account_id,
-            "cancelable_only": cancelable_only,
-        })
+        return self._get(
+            "/api/trading/orders",
+            {
+                "account_id": account_id,
+                "cancelable_only": cancelable_only,
+            },
+        )
 
     def query_positions(self, account_id: str = "") -> dict:
         """查询当前持仓列表。
@@ -165,10 +181,13 @@ class TradingMixin(BaseClient):
         Returns:
             委托详情字典
         """
-        return self._get("/api/trading/order_detail", {
-            "order_id": order_id,
-            "account_id": account_id,
-        })
+        return self._get(
+            "/api/trading/order_detail",
+            {
+                "order_id": order_id,
+                "account_id": account_id,
+            },
+        )
 
     def batch_order(self, orders: list[dict]) -> dict:
         """批量下单。
@@ -244,16 +263,19 @@ class TradingMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/trading/order_async", {
-            "stock_code": stock_code,
-            "order_type": order_type,
-            "order_volume": order_volume,
-            "price_type": price_type,
-            "price": price,
-            "strategy_name": strategy_name,
-            "order_remark": order_remark,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/order_async",
+            {
+                "stock_code": stock_code,
+                "order_type": order_type,
+                "order_volume": order_volume,
+                "price_type": price_type,
+                "price": price,
+                "strategy_name": strategy_name,
+                "order_remark": order_remark,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_order_async(self, order_id: int, account_id: str = "") -> dict:
         """异步撤单（结果通过 WebSocket 回调返回）。
@@ -265,10 +287,13 @@ class TradingMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/trading/cancel_async", {
-            "order_id": order_id,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/cancel_async",
+            {
+                "order_id": order_id,
+                "account_id": account_id,
+            },
+        )
 
     # ------------------------------------------------------------------
     # 单条查询
@@ -308,7 +333,9 @@ class TradingMixin(BaseClient):
         Returns:
             单只股票持仓信息字典
         """
-        return self._get(f"/api/trading/position/{stock_code}", {"account_id": account_id})
+        return self._get(
+            f"/api/trading/position/{stock_code}", {"account_id": account_id}
+        )
 
     # ------------------------------------------------------------------
     # 新股申购
@@ -397,14 +424,17 @@ class TradingMixin(BaseClient):
         Returns:
             导出结果
         """
-        return self._post("/api/trading/export_data", {
-            "result_path": result_path,
-            "data_type": data_type,
-            "start_time": start_time,
-            "end_time": end_time,
-            "user_param": user_param,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/export_data",
+            {
+                "result_path": result_path,
+                "data_type": data_type,
+                "start_time": start_time,
+                "end_time": end_time,
+                "user_param": user_param,
+                "account_id": account_id,
+            },
+        )
 
     def query_data(
         self,
@@ -428,14 +458,17 @@ class TradingMixin(BaseClient):
         Returns:
             查询结果
         """
-        return self._post("/api/trading/query_data", {
-            "result_path": result_path,
-            "data_type": data_type,
-            "start_time": start_time,
-            "end_time": end_time,
-            "user_param": user_param,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/query_data",
+            {
+                "result_path": result_path,
+                "data_type": data_type,
+                "start_time": start_time,
+                "end_time": end_time,
+                "user_param": user_param,
+                "account_id": account_id,
+            },
+        )
 
     def sync_transaction_from_external(
         self,
@@ -455,12 +488,15 @@ class TradingMixin(BaseClient):
         Returns:
             同步结果
         """
-        return self._post("/api/trading/sync_transaction", {
-            "operation": operation,
-            "data_type": data_type,
-            "deal_list": deal_list,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/sync_transaction",
+            {
+                "operation": operation,
+                "data_type": data_type,
+                "deal_list": deal_list,
+                "account_id": account_id,
+            },
+        )
 
     def smart_algo_order_async(
         self,
@@ -500,20 +536,23 @@ class TradingMixin(BaseClient):
         Returns:
             包含 ``seq`` 的异步受理结果；最终回报经 ``/ws/trade`` 推送
         """
-        return self._post("/api/trading/smart_algo_order_async", {
-            "stock_code": stock_code,
-            "order_type": order_type,
-            "order_volume": order_volume,
-            "algo_name": algo_name,
-            "start_time": start_time,
-            "end_time": end_time,
-            "algo_param": algo_param or {},
-            "price_type": price_type,
-            "price": price,
-            "strategy_name": strategy_name,
-            "order_remark": order_remark,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/smart_algo_order_async",
+            {
+                "stock_code": stock_code,
+                "order_type": order_type,
+                "order_volume": order_volume,
+                "algo_name": algo_name,
+                "start_time": start_time,
+                "end_time": end_time,
+                "algo_param": algo_param or {},
+                "price_type": price_type,
+                "price": price,
+                "strategy_name": strategy_name,
+                "order_remark": order_remark,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_smart_algo_task_async(self, task_id: int, account_id: str = "") -> dict:
         """撤销算法交易任务。
@@ -525,10 +564,13 @@ class TradingMixin(BaseClient):
         Returns:
             包含 ``seq`` 的异步受理结果；最终回报经 ``/ws/trade`` 推送
         """
-        return self._post("/api/trading/smart_algo_task_cancel_async", {
-            "task_id": task_id,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/trading/smart_algo_task_cancel_async",
+            {
+                "task_id": task_id,
+                "account_id": account_id,
+            },
+        )
 
     def query_smart_algo_task(self, account_id: str = "") -> list:
         """查询当日算法交易任务。
@@ -551,7 +593,10 @@ class TradingMixin(BaseClient):
         Returns:
             算法参数说明字典
         """
-        resp = self._get("/api/trading/smart_algo_param", {
-            "algo_names": ",".join(algo_names),
-        })
+        resp = self._get(
+            "/api/trading/smart_algo_param",
+            {
+                "algo_names": ",".join(algo_names),
+            },
+        )
         return resp.get("data", {})

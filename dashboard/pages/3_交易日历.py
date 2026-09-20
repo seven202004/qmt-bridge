@@ -23,7 +23,9 @@ col1, col2, col3 = st.columns(3)
 with col1:
     market = st.selectbox("市场", ["SH", "SZ", "BJ"], key="td_market")
 with col2:
-    start_date = st.date_input("开始日期", value=date(date.today().year, 1, 1), key="td_start")
+    start_date = st.date_input(
+        "开始日期", value=date(date.today().year, 1, 1), key="td_start"
+    )
 with col3:
     end_date = st.date_input("结束日期", value=date.today(), key="td_end")
 
@@ -32,7 +34,9 @@ if st.button("查询交易日", key="btn_trading_dates"):
         start_str = start_date.strftime("%Y%m%d")
         end_str = end_date.strftime("%Y%m%d")
         with st.spinner("查询中..."):
-            dates = client.get_trading_dates(market, start_time=start_str, end_time=end_str)
+            dates = client.get_trading_dates(
+                market, start_time=start_str, end_time=end_str
+            )
         if not dates:
             st.info("未获取到交易日数据。")
         else:

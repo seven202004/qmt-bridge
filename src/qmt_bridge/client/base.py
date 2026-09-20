@@ -89,9 +89,7 @@ class BaseClient:
         if params:
             # 将参数编码为 URL 查询字符串，跳过 None 值
             query = "&".join(
-                f"{k}={quote(str(v))}"
-                for k, v in params.items()
-                if v is not None
+                f"{k}={quote(str(v))}" for k, v in params.items() if v is not None
             )
             url = f"{self.base_url}{path}?{query}"
         else:
@@ -128,9 +126,7 @@ class BaseClient:
         """
         if params:
             query = "&".join(
-                f"{k}={quote(str(v))}"
-                for k, v in params.items()
-                if v is not None
+                f"{k}={quote(str(v))}" for k, v in params.items() if v is not None
             )
             url = f"{self.base_url}{path}?{query}"
         else:
@@ -157,7 +153,9 @@ class BaseClient:
                 body = json.loads(resp.read().decode())
                 logger.debug(
                     "%s %s -> %d %.1fms",
-                    req.get_method(), req.full_url, resp.status,
+                    req.get_method(),
+                    req.full_url,
+                    resp.status,
                     (time.perf_counter() - started) * 1000.0,
                 )
                 return body
@@ -169,7 +167,9 @@ class BaseClient:
             exc.read = exc.fp.read  # type: ignore[assignment]
             logger.error(
                 "%s %s -> %d %s",
-                req.get_method(), req.full_url, exc.code,
+                req.get_method(),
+                req.full_url,
+                exc.code,
                 detail[:_MAX_LOGGED_BODY].decode(errors="replace"),
             )
             raise

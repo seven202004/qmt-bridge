@@ -54,7 +54,9 @@ def _load_config() -> dict:
 def _save_config(host: str, port: int, api_key: str) -> None:
     """将连接配置保存到本地文件。"""
     _CONFIG_PATH.write_text(
-        json.dumps({"host": host, "port": port, "api_key": api_key}, ensure_ascii=False),
+        json.dumps(
+            {"host": host, "port": port, "api_key": api_key}, ensure_ascii=False
+        ),
         encoding="utf-8",
     )
 
@@ -64,12 +66,22 @@ def render_sidebar():
     cfg = _load_config()
 
     st.sidebar.title("QMT Bridge")
-    host = st.sidebar.text_input("服务地址", value=cfg.get("host", "127.0.0.1"), key="_sb_host")
+    host = st.sidebar.text_input(
+        "服务地址", value=cfg.get("host", "127.0.0.1"), key="_sb_host"
+    )
     port = st.sidebar.number_input(
-        "端口", value=cfg.get("port", 8000), min_value=1, max_value=65535, step=1, key="_sb_port"
+        "端口",
+        value=cfg.get("port", 8000),
+        min_value=1,
+        max_value=65535,
+        step=1,
+        key="_sb_port",
     )
     api_key = st.sidebar.text_input(
-        "API Key（交易功能需要）", value=cfg.get("api_key", ""), type="password", key="_sb_api_key"
+        "API Key（交易功能需要）",
+        value=cfg.get("api_key", ""),
+        type="password",
+        key="_sb_api_key",
     )
 
     if st.sidebar.button("连接 / 刷新", key="_sb_connect"):

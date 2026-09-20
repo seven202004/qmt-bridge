@@ -7,6 +7,7 @@
 
 底层对应 xtquant 的 ``xtdata.get_instrument_detail()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -66,10 +67,12 @@ class UtilityMixin(BaseClient):
         Returns:
             匹配的股票代码列表
         """
-        resp = self._get("/api/utility/search", {
-            "keyword": keyword,
-            "category": category,
-            "limit": limit,
-        })
+        resp = self._get(
+            "/api/utility/search",
+            {
+                "keyword": keyword,
+                "category": category,
+                "limit": limit,
+            },
+        )
         return resp.get("stocks", [])
-

@@ -73,7 +73,9 @@ if st.session_state.get("connected"):
             st.metric("xtquant 版本", xtdata_ver)
         with c3:
             status = client.get_connection_status()
-            connected = status.get("connected", False) if isinstance(status, dict) else False
+            connected = (
+                status.get("connected", False) if isinstance(status, dict) else False
+            )
             st.metric("数据连接", "已连接" if connected else "未连接")
     except Exception as e:
         report_error("获取概览信息失败", e, as_warning=True)

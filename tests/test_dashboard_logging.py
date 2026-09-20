@@ -44,7 +44,9 @@ def _load_sidebar(monkeypatch, tmp_path, log_file: str = ""):
     return importlib.reload(importlib.import_module("_sidebar")), fake_st
 
 
-def test_report_error_writes_log_with_traceback_and_shows_message(monkeypatch, tmp_path):
+def test_report_error_writes_log_with_traceback_and_shows_message(
+    monkeypatch, tmp_path
+):
     """失败必须同时落到日志（带堆栈）和界面，不能只弹个框。"""
     sidebar, fake_st = _load_sidebar(monkeypatch, tmp_path)
 

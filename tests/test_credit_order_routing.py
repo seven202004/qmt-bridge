@@ -111,7 +111,9 @@ def test_credit_client_calls_credit_orders_path(monkeypatch):
             return {}
 
     # Mixin 现在继承 BaseClient（这样 mypy 才知道 self._get 是什么），构造需要 host/port
-    _Client("127.0.0.1", 1).query_credit_orders(account_id="16980005", cancelable_only=True)
+    _Client("127.0.0.1", 1).query_credit_orders(
+        account_id="16980005", cancelable_only=True
+    )
     assert seen["path"] == "/api/credit/orders"
     assert seen["params"] == {"account_id": "16980005", "cancelable_only": True}
 
@@ -153,6 +155,8 @@ def test_credit_client_calls_credit_cancel_path():
             seen["body"] = body
             return {}
 
-    _Client("127.0.0.1", 1).cancel_credit_order(order_id=413138945, account_id="16980005")
+    _Client("127.0.0.1", 1).cancel_credit_order(
+        order_id=413138945, account_id="16980005"
+    )
     assert seen["path"] == "/api/credit/cancel"
     assert seen["body"] == {"order_id": 413138945, "account_id": "16980005"}

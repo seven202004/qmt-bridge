@@ -79,7 +79,9 @@ async def ws_l2_thousand(ws: WebSocket):
 
         logger.info(
             "千档订阅已建立 client=%s 股票=%d只 %s",
-            ws.client, len(seq_ids), summarize_codes(stocks),
+            ws.client,
+            len(seq_ids),
+            summarize_codes(stocks),
         )
 
         # 保持连接存活，等待客户端断开

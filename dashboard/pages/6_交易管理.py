@@ -35,7 +35,9 @@ with tab1:
             format_func=lambda x: "买入" if x == 23 else "卖出",
             key="order_type",
         )
-        order_volume = st.number_input("委托数量（股）", value=100, min_value=1, step=100, key="order_vol")
+        order_volume = st.number_input(
+            "委托数量（股）", value=100, min_value=1, step=100, key="order_vol"
+        )
     with col2:
         price_type = st.selectbox(
             "报价类型",
@@ -43,7 +45,9 @@ with tab1:
             format_func=lambda x: {5: "最新价", 11: "限价"}.get(x, str(x)),
             key="price_type",
         )
-        price = st.number_input("委托价格（限价时填写）", value=0.0, step=0.01, key="order_price")
+        price = st.number_input(
+            "委托价格（限价时填写）", value=0.0, step=0.01, key="order_price"
+        )
         order_remark = st.text_input("备注（可选）", value="", key="order_remark")
 
     # 两步确认：先勾选确认框，再点击提交
@@ -54,7 +58,9 @@ with tab1:
             st.warning("请输入股票代码。")
         elif not order_confirm:
             direction = "买入" if order_type == 23 else "卖出"
-            st.warning(f"即将 **{direction} {order_stock}**，数量 **{order_volume}** 股。请先勾选确认框。")
+            st.warning(
+                f"即将 **{direction} {order_stock}**，数量 **{order_volume}** 股。请先勾选确认框。"
+            )
         else:
             try:
                 with st.spinner("提交中..."):
@@ -96,7 +102,9 @@ with tab2:
             report_error("查询委托失败", e)
 
     st.subheader("撤单")
-    cancel_id = st.number_input("委托 ID", value=0, min_value=0, step=1, key="cancel_id")
+    cancel_id = st.number_input(
+        "委托 ID", value=0, min_value=0, step=1, key="cancel_id"
+    )
     if st.button("撤销委托", key="btn_cancel"):
         if cancel_id <= 0:
             st.warning("请输入有效的委托 ID。")

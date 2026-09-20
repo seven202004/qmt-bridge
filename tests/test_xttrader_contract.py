@@ -77,10 +77,17 @@ def test_smart_algo_order_async_forwards_all_arguments():
     manager, fake = _manager_with_fake_trader()
     algo_param = {"m_nValidTimeStart": 1, "m_nValidTimeEnd": 2}
     manager.smart_algo_order_async(
-        stock_code="600000.SH", order_type=23, order_volume=2000,
-        price_type=5, price=11.65, algo_name="CGS_TWAP",
-        start_time="20240101 09:30:00", end_time="20240101 15:00:00",
-        algo_param=algo_param, strategy_name="s", order_remark="r",
+        stock_code="600000.SH",
+        order_type=23,
+        order_volume=2000,
+        price_type=5,
+        price=11.65,
+        algo_name="CGS_TWAP",
+        start_time="20240101 09:30:00",
+        end_time="20240101 15:00:00",
+        algo_param=algo_param,
+        strategy_name="s",
+        order_remark="r",
         account_id="123456",
     )
     name, args, _ = fake.calls[0]
@@ -88,8 +95,17 @@ def test_smart_algo_order_async_forwards_all_arguments():
     # account, stock_code, order_type, order_volume, price_type, price,
     # strategy_name, order_remark, algo_name, start_time, end_time, algo_param
     assert args[1:] == (
-        "600000.SH", 23, 2000, 5, 11.65, "s", "r",
-        "CGS_TWAP", "20240101 09:30:00", "20240101 15:00:00", algo_param,
+        "600000.SH",
+        23,
+        2000,
+        5,
+        11.65,
+        "s",
+        "r",
+        "CGS_TWAP",
+        "20240101 09:30:00",
+        "20240101 15:00:00",
+        algo_param,
     )
 
 
@@ -97,8 +113,12 @@ def test_smart_algo_order_passes_empty_param_dict_when_omitted():
     """algo_param 省略时应传空 dict 而非 None（xtquant 会对它写 m_nValidTime* 键）。"""
     manager, fake = _manager_with_fake_trader()
     manager.smart_algo_order_async(
-        stock_code="600000.SH", order_type=23, order_volume=100,
-        price_type=5, price=0.0, algo_name="CGS_TWAP",
+        stock_code="600000.SH",
+        order_type=23,
+        order_volume=100,
+        price_type=5,
+        price=0.0,
+        algo_name="CGS_TWAP",
     )
     assert fake.calls[0][1][-1] == {}
 
@@ -110,9 +130,11 @@ def test_smart_algo_query_and_cancel_forward():
     manager.query_smart_algo_task(account_id="123456")
     manager.get_smart_algo_param(["TWAP", "VWAP"])
     assert [c[0] for c in fake.calls] == [
-        "cancel_smart_algo_task_async", "query_smart_algo_task", "get_smart_algo_param",
+        "cancel_smart_algo_task_async",
+        "query_smart_algo_task",
+        "get_smart_algo_param",
     ]
-    assert fake.calls[0][1][1] == 777                      # task_id 在 account 之后
+    assert fake.calls[0][1][1] == 777  # task_id 在 account 之后
     assert fake.calls[2][1] == (["TWAP", "VWAP"],)
 
 

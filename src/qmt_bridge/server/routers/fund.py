@@ -18,7 +18,9 @@ from ..models import (
 )
 from ..security import require_api_key
 
-router = APIRouter(prefix="/api/fund", tags=["fund"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/api/fund", tags=["fund"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.post("/transfer")

@@ -19,7 +19,9 @@ from ..helpers import _numpy_to_python
 from ..models import CancelRequest, CreditOrderRequest
 from ..security import require_api_key
 
-router = APIRouter(prefix="/api/credit", tags=["credit"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/api/credit", tags=["credit"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.post("/order")
@@ -41,8 +43,9 @@ def credit_order(req: CreditOrderRequest, manager=Depends(get_trader_manager)):
 @router.post("/cancel")
 def cancel_credit_order(req: CancelRequest, manager=Depends(get_trader_manager)):
     """信用账户同步撤单 → manager.cancel_credit_order()"""
-    result = manager.cancel_credit_order(order_id=req.order_id,
-                                         account_id=req.account_id)
+    result = manager.cancel_credit_order(
+        order_id=req.order_id, account_id=req.account_id
+    )
     return {"status": "ok", "data": _numpy_to_python(result)}
 
 
@@ -53,8 +56,9 @@ def query_credit_orders(
     manager=Depends(get_trader_manager),
 ):
     """查询信用账户当日委托列表 → manager.query_credit_orders()"""
-    result = manager.query_credit_orders(account_id=account_id,
-                                         cancelable_only=cancelable_only)
+    result = manager.query_credit_orders(
+        account_id=account_id, cancelable_only=cancelable_only
+    )
     return {"data": _numpy_to_python(result)}
 
 

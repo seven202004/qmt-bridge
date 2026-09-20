@@ -116,6 +116,7 @@ def get_xtdata_version():
     """
     try:
         import xtquant
+
         version = getattr(xtquant, "__version__", "unknown")
     except Exception:  # noqa: BLE001 — 版本探测失败降级为 unknown，不值得让接口 500
         version = "unknown"
@@ -170,5 +171,3 @@ def get_quote_server_status():
         # 否则「接口一直报这个错」在服务端日志里完全查不到。
         logger.warning("查询行情服务器状态失败: %s", e, exc_info=True)
         return {"error": str(e)}
-
-

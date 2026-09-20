@@ -9,6 +9,7 @@
 底层对应 xtquant 的 ``xtdata.get_trading_dates()``、
 ``xtdata.get_holidays()``、``xtdata.get_trading_calendar()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -32,12 +33,15 @@ class CalendarMixin(BaseClient):
         Returns:
             交易日期列表（时间戳格式）
         """
-        resp = self._get("/api/calendar/trading_dates", {
-            "market": market,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-        })
+        resp = self._get(
+            "/api/calendar/trading_dates",
+            {
+                "market": market,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+            },
+        )
         return resp.get("dates", [])
 
     def get_holidays(self) -> list:
@@ -67,11 +71,14 @@ class CalendarMixin(BaseClient):
         Returns:
             交易日历列表
         """
-        resp = self._get("/api/calendar/trading_calendar", {
-            "market": market,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/calendar/trading_calendar",
+            {
+                "market": market,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("calendar", [])
 
     def get_trading_period(self, stock: str) -> list:
@@ -100,10 +107,13 @@ class CalendarMixin(BaseClient):
         Returns:
             True 表示是交易日，False 表示非交易日（周末或节假日）
         """
-        resp = self._get("/api/calendar/is_trading_date", {
-            "market": market,
-            "date": date,
-        })
+        resp = self._get(
+            "/api/calendar/is_trading_date",
+            {
+                "market": market,
+                "date": date,
+            },
+        )
         return resp.get("is_trading", False)
 
     def get_prev_trading_date(self, market: str, date: str = "") -> str | None:
@@ -116,10 +126,13 @@ class CalendarMixin(BaseClient):
         Returns:
             上一个交易日的日期字符串，无结果时返回 None
         """
-        resp = self._get("/api/calendar/prev_trading_date", {
-            "market": market,
-            "date": date,
-        })
+        resp = self._get(
+            "/api/calendar/prev_trading_date",
+            {
+                "market": market,
+                "date": date,
+            },
+        )
         return resp.get("prev_trading_date")
 
     def get_next_trading_date(self, market: str, date: str = "") -> str | None:
@@ -132,10 +145,13 @@ class CalendarMixin(BaseClient):
         Returns:
             下一个交易日的日期字符串，无结果时返回 None
         """
-        resp = self._get("/api/calendar/next_trading_date", {
-            "market": market,
-            "date": date,
-        })
+        resp = self._get(
+            "/api/calendar/next_trading_date",
+            {
+                "market": market,
+                "date": date,
+            },
+        )
         return resp.get("next_trading_date")
 
     def get_trading_dates_count(
@@ -151,10 +167,12 @@ class CalendarMixin(BaseClient):
         Returns:
             交易日数量
         """
-        resp = self._get("/api/calendar/trading_dates_count", {
-            "market": market,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/calendar/trading_dates_count",
+            {
+                "market": market,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("count", 0)
-

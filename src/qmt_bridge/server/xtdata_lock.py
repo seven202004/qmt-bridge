@@ -73,7 +73,10 @@ class XtdataSerializerMiddleware:
                     logger.warning(
                         "xtdata 串行化排队 %.2fs 后开始处理 %s（前一个 %s 持锁 %.2fs；"
                         "串行化期间 /api 请求只能依次排队）",
-                        waited, path, blocker or "未知", self._holder_started - blocker_started,
+                        waited,
+                        path,
+                        blocker or "未知",
+                        self._holder_started - blocker_started,
                     )
                 else:
                     logger.debug("xtdata 串行化排队 %.3fs: %s", waited, path)
@@ -84,7 +87,8 @@ class XtdataSerializerMiddleware:
                     if held >= LONG_HOLD_SECONDS:
                         logger.warning(
                             "xtdata 串行化: %s 持锁 %.2fs，期间其它 /api 请求全部在排队",
-                            path, held,
+                            path,
+                            held,
                         )
             return
         await self.app(scope, receive, send)

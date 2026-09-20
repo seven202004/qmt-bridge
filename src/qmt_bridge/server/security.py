@@ -67,7 +67,9 @@ def require_api_key(
         # 服务端未配置 API Key，无法进行认证
         logger.warning(
             "认证失败: 服务端未配置 API Key, 拒绝 %s %s (client=%s)",
-            request.method, request.url.path, _client_addr(request),
+            request.method,
+            request.url.path,
+            _client_addr(request),
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -77,7 +79,9 @@ def require_api_key(
         # 客户端未提供密钥，或密钥不匹配
         logger.warning(
             "认证失败: API Key 无效或缺失, 拒绝 %s %s (client=%s)",
-            request.method, request.url.path, _client_addr(request),
+            request.method,
+            request.url.path,
+            _client_addr(request),
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

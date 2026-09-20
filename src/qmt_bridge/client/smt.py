@@ -12,6 +12,7 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的 SMT 相关方法。
 """
+
 from .base import BaseClient
 
 
@@ -75,15 +76,18 @@ class SMTMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/smt/negotiate_order_async", {
-            "src_group_id": src_group_id,
-            "order_code": order_code,
-            "date": date,
-            "amount": amount,
-            "apply_rate": apply_rate,
-            "dict_param": dict_param or {},
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/smt/negotiate_order_async",
+            {
+                "src_group_id": src_group_id,
+                "order_code": order_code,
+                "date": date,
+                "amount": amount,
+                "apply_rate": apply_rate,
+                "dict_param": dict_param or {},
+                "account_id": account_id,
+            },
+        )
 
     def smt_appointment_order_async(
         self,
@@ -105,17 +109,18 @@ class SMTMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/smt/appointment_order_async", {
-            "order_code": order_code,
-            "date": date,
-            "amount": amount,
-            "apply_rate": apply_rate,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/smt/appointment_order_async",
+            {
+                "order_code": order_code,
+                "date": date,
+                "amount": amount,
+                "apply_rate": apply_rate,
+                "account_id": account_id,
+            },
+        )
 
-    def smt_appointment_cancel_async(
-        self, apply_id: str, account_id: str = ""
-    ) -> dict:
+    def smt_appointment_cancel_async(self, apply_id: str, account_id: str = "") -> dict:
         """异步取消预约。
 
         Args:
@@ -125,10 +130,13 @@ class SMTMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/smt/appointment_cancel_async", {
-            "apply_id": apply_id,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/smt/appointment_cancel_async",
+            {
+                "apply_id": apply_id,
+                "account_id": account_id,
+            },
+        )
 
     def smt_compact_renewal_async(
         self,
@@ -152,14 +160,17 @@ class SMTMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/smt/compact_renewal_async", {
-            "cash_compact_id": cash_compact_id,
-            "order_code": order_code,
-            "defer_days": defer_days,
-            "defer_num": defer_num,
-            "apply_rate": apply_rate,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/smt/compact_renewal_async",
+            {
+                "cash_compact_id": cash_compact_id,
+                "order_code": order_code,
+                "defer_days": defer_days,
+                "defer_num": defer_num,
+                "apply_rate": apply_rate,
+                "account_id": account_id,
+            },
+        )
 
     def smt_compact_return_async(
         self,
@@ -181,10 +192,13 @@ class SMTMixin(BaseClient):
         Returns:
             包含请求序号的字典
         """
-        return self._post("/api/smt/compact_return_async", {
-            "src_group_id": src_group_id,
-            "cash_compact_id": cash_compact_id,
-            "order_code": order_code,
-            "occur_amount": occur_amount,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/smt/compact_return_async",
+            {
+                "src_group_id": src_group_id,
+                "cash_compact_id": cash_compact_id,
+                "order_code": order_code,
+                "occur_amount": occur_amount,
+                "account_id": account_id,
+            },
+        )

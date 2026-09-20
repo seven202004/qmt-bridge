@@ -5,6 +5,7 @@
 底层对应 xtquant 的 ``xtdata.get_stock_list_in_sector()`` 和
 ``xtdata.get_instrument_detail()`` 等函数。
 """
+
 from .base import BaseClient
 
 

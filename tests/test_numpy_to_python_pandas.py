@@ -60,13 +60,17 @@ def test_nested_dataframe_in_dict_and_list():
     df = pd.DataFrame({"close": [10.0]}, index=pd.Index(["20240101"], name="time"))
     out = _call_with_timeout(_numpy_to_python, {"000001.SZ": df})
     assert out == {"000001.SZ": [{"time": "20240101", "close": 10.0}]}
-    assert _call_with_timeout(_numpy_to_python, [df]) == [[{"time": "20240101", "close": 10.0}]]
+    assert _call_with_timeout(_numpy_to_python, [df]) == [
+        [{"time": "20240101", "close": 10.0}]
+    ]
 
 
 def test_nan_still_becomes_none():
     """原有语义不变：NaN / Inf 仍转为 None（JSON 不支持）。"""
-    df = pd.DataFrame({"close": [float("nan"), float("inf")]},
-                      index=pd.Index(["20240101", "20240102"], name="time"))
+    df = pd.DataFrame(
+        {"close": [float("nan"), float("inf")]},
+        index=pd.Index(["20240101", "20240102"], name="time"),
+    )
     out = _call_with_timeout(_numpy_to_python, df)
     assert out == [
         {"time": "20240101", "close": None},

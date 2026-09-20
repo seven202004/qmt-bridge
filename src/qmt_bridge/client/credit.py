@@ -13,6 +13,7 @@
 
 底层对应 xtquant 的 ``XtQuantTrader`` 类的信用交易方法。
 """
+
 from .base import BaseClient
 
 
@@ -47,16 +48,19 @@ class CreditMixin(BaseClient):
         Returns:
             委托结果
         """
-        return self._post("/api/credit/order", {
-            "stock_code": stock_code,
-            "order_type": order_type,
-            "order_volume": order_volume,
-            "price_type": price_type,
-            "price": price,
-            "strategy_name": strategy_name,
-            "order_remark": order_remark,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/credit/order",
+            {
+                "stock_code": stock_code,
+                "order_type": order_type,
+                "order_volume": order_volume,
+                "price_type": price_type,
+                "price": price,
+                "strategy_name": strategy_name,
+                "order_remark": order_remark,
+                "account_id": account_id,
+            },
+        )
 
     def cancel_credit_order(self, order_id: int, account_id: str = "") -> dict:
         """信用账户撤单。
@@ -68,13 +72,17 @@ class CreditMixin(BaseClient):
         Returns:
             撤单结果（``data`` 为返回码，0=成功）
         """
-        return self._post("/api/credit/cancel", {
-            "order_id": order_id,
-            "account_id": account_id,
-        })
+        return self._post(
+            "/api/credit/cancel",
+            {
+                "order_id": order_id,
+                "account_id": account_id,
+            },
+        )
 
-    def query_credit_orders(self, account_id: str = "",
-                            cancelable_only: bool = False) -> dict:
+    def query_credit_orders(
+        self, account_id: str = "", cancelable_only: bool = False
+    ) -> dict:
         """查询信用账户当日委托。
 
         Args:
@@ -84,10 +92,13 @@ class CreditMixin(BaseClient):
         Returns:
             信用账户委托列表
         """
-        return self._get("/api/credit/orders", {
-            "account_id": account_id,
-            "cancelable_only": cancelable_only,
-        })
+        return self._get(
+            "/api/credit/orders",
+            {
+                "account_id": account_id,
+                "cancelable_only": cancelable_only,
+            },
+        )
 
     def query_credit_positions(self, account_id: str = "") -> dict:
         """查询信用账户持仓。

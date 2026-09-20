@@ -5,6 +5,7 @@
 
 底层对应 xtquant 的 ``xtdata.call_formula()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -40,16 +41,19 @@ class FormulaMixin(BaseClient):
         Returns:
             公式计算结果字典
         """
-        return self._post("/api/formula/call", {
-            "formula_name": formula_name,
-            "stock_code": stock_code,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "params": params,
-        })
+        return self._post(
+            "/api/formula/call",
+            {
+                "formula_name": formula_name,
+                "stock_code": stock_code,
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "params": params,
+            },
+        )
 
     def call_formula_batch(
         self,
@@ -80,16 +84,19 @@ class FormulaMixin(BaseClient):
         Returns:
             公式计算结果
         """
-        return self._post("/api/formula/call_batch", {
-            "formula_names": formula_names,
-            "stock_codes": stock_codes,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "extend_params": extend_params or [],
-        })
+        return self._post(
+            "/api/formula/call_batch",
+            {
+                "formula_names": formula_names,
+                "stock_codes": stock_codes,
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "extend_params": extend_params or [],
+            },
+        )
 
     def generate_index_data(
         self,
@@ -118,15 +125,18 @@ class FormulaMixin(BaseClient):
         Returns:
             合成指数的行情数据字典
         """
-        return self._post("/api/formula/generate_index_data", {
-            "formula_name": formula_name,
-            "formula_param": formula_param or {},
-            "stocks": stocks or [],
-            "period": period,
-            "dividend_type": dividend_type,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        return self._post(
+            "/api/formula/generate_index_data",
+            {
+                "formula_name": formula_name,
+                "formula_param": formula_param or {},
+                "stocks": stocks or [],
+                "period": period,
+                "dividend_type": dividend_type,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
 
     def create_formula(
         self,
@@ -146,11 +156,14 @@ class FormulaMixin(BaseClient):
         Returns:
             创建结果
         """
-        return self._post("/api/formula/create", {
-            "formula_name": formula_name,
-            "formula_content": formula_content,
-            "formula_params": formula_params or {},
-        })
+        return self._post(
+            "/api/formula/create",
+            {
+                "formula_name": formula_name,
+                "formula_content": formula_content,
+                "formula_params": formula_params or {},
+            },
+        )
 
     def import_formula(self, formula_name: str, formula_file: str) -> dict:
         """导入公式。
@@ -164,10 +177,13 @@ class FormulaMixin(BaseClient):
         Returns:
             导入结果
         """
-        return self._post("/api/formula/import", {
-            "formula_name": formula_name,
-            "formula_file": formula_file,
-        })
+        return self._post(
+            "/api/formula/import",
+            {
+                "formula_name": formula_name,
+                "formula_file": formula_file,
+            },
+        )
 
     def del_formula(self, formula_name: str) -> dict:
         """删除公式。

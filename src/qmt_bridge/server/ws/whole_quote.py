@@ -72,7 +72,9 @@ async def ws_whole_quote(ws: WebSocket):
 
         logger.info(
             "全推订阅已建立 client=%s 市场=%s seq_id=%s",
-            ws.client, summarize_codes(code_list), seq_id,
+            ws.client,
+            summarize_codes(code_list),
+            seq_id,
         )
 
         # 保持连接存活，等待客户端断开

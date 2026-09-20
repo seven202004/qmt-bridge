@@ -91,7 +91,9 @@ with tab3:
                     for expiry, options in data.items():
                         with st.expander(f"到期日: {expiry}", expanded=True):
                             if isinstance(options, list):
-                                st.dataframe(pd.DataFrame(options), use_container_width=True)
+                                st.dataframe(
+                                    pd.DataFrame(options), use_container_width=True
+                                )
                             else:
                                 st.json(options)
                 else:
@@ -114,7 +116,9 @@ with tab3:
         else:
             try:
                 with st.spinner("查询中..."):
-                    data = client.get_option_list(opt_undl2, opt_dedate, opttype=opt_type)
+                    data = client.get_option_list(
+                        opt_undl2, opt_dedate, opttype=opt_type
+                    )
                 if not data:
                     st.info("未获取到期权列表。")
                 else:
@@ -177,10 +181,16 @@ with tab4:
                 if data.get("error"):
                     st.warning(data["error"])
                 else:
-                    st.success(f"{data.get('name', etf_code)} — 成分股 {data.get('component_count', 0)} 只，净值 {data.get('nav', '')}")
+                    st.success(
+                        f"{data.get('name', etf_code)} — 成分股 {data.get('component_count', 0)} 只，净值 {data.get('nav', '')}"
+                    )
                     components = data.get("components", [])
                     if components:
-                        st.dataframe(pd.DataFrame(components), use_container_width=True, height=300)
+                        st.dataframe(
+                            pd.DataFrame(components),
+                            use_container_width=True,
+                            height=300,
+                        )
             except Exception as e:
                 report_error("查询失败", e)
 

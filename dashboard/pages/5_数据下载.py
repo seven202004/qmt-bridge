@@ -16,7 +16,9 @@ client = require_client()
 # ── 批量下载 ──────────────────────────────────────────────────────
 
 st.header("批量下载")
-st.caption("触发服务端下载历史 K 线数据到本地缓存，下载完成后可通过 get_local_data 快速读取。")
+st.caption(
+    "触发服务端下载历史 K 线数据到本地缓存，下载完成后可通过 get_local_data 快速读取。"
+)
 
 col1, col2 = st.columns(2)
 with col1:
@@ -27,12 +29,19 @@ with col1:
         key="dl_stocks",
     )
 with col2:
-    dl_period = st.selectbox("K 线周期", ["1d", "1w", "1m", "5m", "15m", "30m", "60m"], key="dl_period")
+    dl_period = st.selectbox(
+        "K 线周期", ["1d", "1w", "1m", "5m", "15m", "30m", "60m"], key="dl_period"
+    )
     dl_start = st.text_input("开始日期 (YYYYMMDD)", value="", key="dl_start")
     dl_end = st.text_input("结束日期 (YYYYMMDD)", value="", key="dl_end")
 
 if st.button("开始批量下载", key="btn_batch_download", type="primary"):
-    codes = [c.strip() for line in dl_stocks.split("\n") for c in line.split(",") if c.strip()]
+    codes = [
+        c.strip()
+        for line in dl_stocks.split("\n")
+        for c in line.split(",")
+        if c.strip()
+    ]
     if not codes:
         st.warning("请输入至少一个股票代码。")
     else:
@@ -125,7 +134,12 @@ with col3:
             report_error("下载失败", e)
 
     if st.button("下载表格数据", key="btn_dl_tabular", use_container_width=True):
-        tab_codes = [c.strip() for line in dl_stocks.split("\n") for c in line.split(",") if c.strip()]
+        tab_codes = [
+            c.strip()
+            for line in dl_stocks.split("\n")
+            for c in line.split(",")
+            if c.strip()
+        ]
         if not tab_codes:
             st.warning("请在上方「股票代码」中输入至少一个代码。")
         else:

@@ -49,7 +49,9 @@ def _describe(fields: dict[str, Any]) -> str:
     return " ".join(f"{k}={_format_value(v)}" for k, v in fields.items()) or "-"
 
 
-def _bind_fields(func: Callable[..., Any], self: Any, args: tuple, kwargs: dict) -> dict[str, Any]:
+def _bind_fields(
+    func: Callable[..., Any], self: Any, args: tuple, kwargs: dict
+) -> dict[str, Any]:
     """按被装饰方法的签名把实参绑定成「参数名 → 值」，敏感字段在此剔除。"""
     try:
         bound = inspect.signature(func).bind(self, *args, **kwargs)
@@ -162,10 +164,13 @@ class XtTraderManager:
         Returns:
             :class:`xtquant.xttype.StockAccount` 实例。
         """
-        if account_type == "STOCK" and (not account_id or account_id == self.account_id):
+        if account_type == "STOCK" and (
+            not account_id or account_id == self.account_id
+        ):
             # 普通账户 + 默认账号：复用连接时缓存的默认账户，避免重复构造
             return self._account
         from xtquant.xttype import StockAccount
+
         return StockAccount(account_id or self.account_id, account_type)
 
     # ------------------------------------------------------------------
@@ -173,27 +178,53 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("同步下单")
-    def order(self, stock_code: str, order_type: int, order_volume: int,
-              price_type: int = 5, price: float = 0.0,
-              strategy_name: str = "", order_remark: str = "",
-              account_id: str = ""):
+    def order(
+        self,
+        stock_code: str,
+        order_type: int,
+        order_volume: int,
+        price_type: int = 5,
+        price: float = 0.0,
+        strategy_name: str = "",
+        order_remark: str = "",
+        account_id: str = "",
+    ):
         """同步下单 → _trader.order_stock()"""
         account = self._resolve_account(account_id)
         return self._trader.order_stock(
-            account, stock_code, order_type, order_volume,
-            price_type, price, strategy_name, order_remark,
+            account,
+            stock_code,
+            order_type,
+            order_volume,
+            price_type,
+            price,
+            strategy_name,
+            order_remark,
         )
 
     @_audited("异步下单")
-    def order_async(self, stock_code: str, order_type: int, order_volume: int,
-                    price_type: int = 5, price: float = 0.0,
-                    strategy_name: str = "", order_remark: str = "",
-                    account_id: str = ""):
+    def order_async(
+        self,
+        stock_code: str,
+        order_type: int,
+        order_volume: int,
+        price_type: int = 5,
+        price: float = 0.0,
+        strategy_name: str = "",
+        order_remark: str = "",
+        account_id: str = "",
+    ):
         """异步下单 → _trader.order_stock_async()"""
         account = self._resolve_account(account_id)
         return self._trader.order_stock_async(
-            account, stock_code, order_type, order_volume,
-            price_type, price, strategy_name, order_remark,
+            account,
+            stock_code,
+            order_type,
+            order_volume,
+            price_type,
+            price,
+            strategy_name,
+            order_remark,
         )
 
     @_audited("同步撤单")
@@ -215,7 +246,9 @@ class XtTraderManager:
         return self._trader.cancel_order_stock_sysid(account, market, sysid)
 
     @_audited("按系统编号异步撤单")
-    def cancel_order_stock_sysid_async(self, market: str, sysid: str, account_id: str = ""):
+    def cancel_order_stock_sysid_async(
+        self, market: str, sysid: str, account_id: str = ""
+    ):
         """按系统编号异步撤单 → _trader.cancel_order_stock_sysid_async()"""
         account = self._resolve_account(account_id)
         return self._trader.cancel_order_stock_sysid_async(account, market, sysid)
@@ -279,15 +312,28 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("信用下单")
-    def credit_order(self, stock_code: str, order_type: int, order_volume: int,
-                     price_type: int = 5, price: float = 0.0,
-                     strategy_name: str = "", order_remark: str = "",
-                     account_id: str = ""):
+    def credit_order(
+        self,
+        stock_code: str,
+        order_type: int,
+        order_volume: int,
+        price_type: int = 5,
+        price: float = 0.0,
+        strategy_name: str = "",
+        order_remark: str = "",
+        account_id: str = "",
+    ):
         """信用交易下单（通过 order_type 常量区分融资/融券）→ _trader.order_stock()"""
         account = self._resolve_account(account_id, account_type="CREDIT")
         return self._trader.order_stock(
-            account, stock_code, order_type, order_volume,
-            price_type, price, strategy_name, order_remark,
+            account,
+            stock_code,
+            order_type,
+            order_volume,
+            price_type,
+            price,
+            strategy_name,
+            order_remark,
         )
 
     @_audited("信用撤单")
@@ -345,7 +391,9 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("资金划转")
-    def fund_transfer(self, transfer_direction: int, amount: float, account_id: str = ""):
+    def fund_transfer(
+        self, transfer_direction: int, amount: float, account_id: str = ""
+    ):
         """资金划转 → _trader.fund_transfer()"""
         account = self._resolve_account(account_id)
         return self._trader.fund_transfer(account, transfer_direction, amount)
@@ -355,39 +403,87 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("银行转证券")
-    def bank_transfer_in(self, bank_no: str, bank_account: str, balance: float,
-                         bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
+    def bank_transfer_in(
+        self,
+        bank_no: str,
+        bank_account: str,
+        balance: float,
+        bank_pwd: str = "",
+        fund_pwd: str = "",
+        account_id: str = "",
+    ):
         """银行转证券 → _trader.bank_transfer_in()"""
         account = self._resolve_account(account_id)
         return self._trader.bank_transfer_in(
-            account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
+            account,
+            bank_no,
+            bank_account,
+            balance,
+            bank_pwd,
+            fund_pwd,
         )
 
     @_audited("证券转银行")
-    def bank_transfer_out(self, bank_no: str, bank_account: str, balance: float,
-                          bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
+    def bank_transfer_out(
+        self,
+        bank_no: str,
+        bank_account: str,
+        balance: float,
+        bank_pwd: str = "",
+        fund_pwd: str = "",
+        account_id: str = "",
+    ):
         """证券转银行 → _trader.bank_transfer_out()"""
         account = self._resolve_account(account_id)
         return self._trader.bank_transfer_out(
-            account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
+            account,
+            bank_no,
+            bank_account,
+            balance,
+            bank_pwd,
+            fund_pwd,
         )
 
     @_audited("异步银行转证券")
-    def bank_transfer_in_async(self, bank_no: str, bank_account: str, balance: float,
-                               bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
+    def bank_transfer_in_async(
+        self,
+        bank_no: str,
+        bank_account: str,
+        balance: float,
+        bank_pwd: str = "",
+        fund_pwd: str = "",
+        account_id: str = "",
+    ):
         """异步银行转证券 → _trader.bank_transfer_in_async()"""
         account = self._resolve_account(account_id)
         return self._trader.bank_transfer_in_async(
-            account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
+            account,
+            bank_no,
+            bank_account,
+            balance,
+            bank_pwd,
+            fund_pwd,
         )
 
     @_audited("异步证券转银行")
-    def bank_transfer_out_async(self, bank_no: str, bank_account: str, balance: float,
-                                bank_pwd: str = "", fund_pwd: str = "", account_id: str = ""):
+    def bank_transfer_out_async(
+        self,
+        bank_no: str,
+        bank_account: str,
+        balance: float,
+        bank_pwd: str = "",
+        fund_pwd: str = "",
+        account_id: str = "",
+    ):
         """异步证券转银行 → _trader.bank_transfer_out_async()"""
         account = self._resolve_account(account_id)
         return self._trader.bank_transfer_out_async(
-            account, bank_no, bank_account, balance, bank_pwd, fund_pwd,
+            account,
+            bank_no,
+            bank_account,
+            balance,
+            bank_pwd,
+            fund_pwd,
         )
 
     def query_bank_info(self, account_id: str = ""):
@@ -395,37 +491,53 @@ class XtTraderManager:
         account = self._resolve_account(account_id)
         return self._trader.query_bank_info(account)
 
-    def query_bank_amount(self, bank_no: str, bank_account: str, bank_pwd: str,
-                          account_id: str = ""):
+    def query_bank_amount(
+        self, bank_no: str, bank_account: str, bank_pwd: str, account_id: str = ""
+    ):
         """查询银行余额 → _trader.query_bank_amount()"""
         account = self._resolve_account(account_id)
         return self._trader.query_bank_amount(account, bank_no, bank_account, bank_pwd)
 
-    def query_bank_transfer_stream(self, start_date: str, end_date: str,
-                                   bank_no: str = "", bank_account: str = "",
-                                   account_id: str = ""):
+    def query_bank_transfer_stream(
+        self,
+        start_date: str,
+        end_date: str,
+        bank_no: str = "",
+        bank_account: str = "",
+        account_id: str = "",
+    ):
         """查询银证转账流水 → _trader.query_bank_transfer_stream()"""
         account = self._resolve_account(account_id)
         return self._trader.query_bank_transfer_stream(
-            account, start_date, end_date, bank_no, bank_account,
+            account,
+            start_date,
+            end_date,
+            bank_no,
+            bank_account,
         )
 
     # ------------------------------------------------------------------
     # CTP 跨市场资金划转
     # ------------------------------------------------------------------
 
-    def ctp_transfer_option_to_future(self, opt_account_id: str, ft_account_id: str,
-                                      balance: float):
+    def ctp_transfer_option_to_future(
+        self, opt_account_id: str, ft_account_id: str, balance: float
+    ):
         """期权→期货 资金划转 → _trader.ctp_transfer_option_to_future()"""
         return self._trader.ctp_transfer_option_to_future(
-            opt_account_id, ft_account_id, balance,
+            opt_account_id,
+            ft_account_id,
+            balance,
         )
 
-    def ctp_transfer_future_to_option(self, opt_account_id: str, ft_account_id: str,
-                                      balance: float):
+    def ctp_transfer_future_to_option(
+        self, opt_account_id: str, ft_account_id: str, balance: float
+    ):
         """期货→期权 资金划转 → _trader.ctp_transfer_future_to_option()"""
         return self._trader.ctp_transfer_future_to_option(
-            opt_account_id, ft_account_id, balance,
+            opt_account_id,
+            ft_account_id,
+            balance,
         )
 
     # ------------------------------------------------------------------
@@ -433,12 +545,22 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("证券划转")
-    def secu_transfer(self, transfer_direction: int, stock_code: str, volume: int,
-                      transfer_type: int, account_id: str = ""):
+    def secu_transfer(
+        self,
+        transfer_direction: int,
+        stock_code: str,
+        volume: int,
+        transfer_type: int,
+        account_id: str = "",
+    ):
         """证券划转 → _trader.secu_transfer()"""
         account = self._resolve_account(account_id)
         return self._trader.secu_transfer(
-            account, transfer_direction, stock_code, volume, transfer_type,
+            account,
+            transfer_direction,
+            stock_code,
+            volume,
+            transfer_type,
         )
 
     # ------------------------------------------------------------------
@@ -461,25 +583,45 @@ class XtTraderManager:
         return self._trader.smt_query_order(account)
 
     @_audited("SMT 协商下单")
-    def smt_negotiate_order_async(self, src_group_id: str, order_code: str,
-                                  date: str, amount: float, apply_rate: float,
-                                  dict_param: dict | None = None,
-                                  account_id: str = ""):
+    def smt_negotiate_order_async(
+        self,
+        src_group_id: str,
+        order_code: str,
+        date: str,
+        amount: float,
+        apply_rate: float,
+        dict_param: dict | None = None,
+        account_id: str = "",
+    ):
         """异步 SMT 协商下单 → _trader.smt_negotiate_order_async()"""
         account = self._resolve_account(account_id)
         return self._trader.smt_negotiate_order_async(
-            account, src_group_id, order_code, date, amount, apply_rate,
+            account,
+            src_group_id,
+            order_code,
+            date,
+            amount,
+            apply_rate,
             dict_param or {},
         )
 
     @_audited("SMT 预约委托")
-    def smt_appointment_order_async(self, order_code: str, date: str,
-                                    amount: float, apply_rate: float,
-                                    account_id: str = ""):
+    def smt_appointment_order_async(
+        self,
+        order_code: str,
+        date: str,
+        amount: float,
+        apply_rate: float,
+        account_id: str = "",
+    ):
         """异步 SMT 预约委托 → _trader.smt_appointment_order_async()"""
         account = self._resolve_account(account_id)
         return self._trader.smt_appointment_order_async(
-            account, order_code, date, amount, apply_rate,
+            account,
+            order_code,
+            date,
+            amount,
+            apply_rate,
         )
 
     @_audited("SMT 取消预约")
@@ -489,23 +631,43 @@ class XtTraderManager:
         return self._trader.smt_appointment_cancel_async(account, apply_id)
 
     @_audited("SMT 合约展期")
-    def smt_compact_renewal_async(self, cash_compact_id: str, order_code: str,
-                                  defer_days: int, defer_num: int,
-                                  apply_rate: float, account_id: str = ""):
+    def smt_compact_renewal_async(
+        self,
+        cash_compact_id: str,
+        order_code: str,
+        defer_days: int,
+        defer_num: int,
+        apply_rate: float,
+        account_id: str = "",
+    ):
         """异步 SMT 合约展期 → _trader.smt_compact_renewal_async()"""
         account = self._resolve_account(account_id)
         return self._trader.smt_compact_renewal_async(
-            account, cash_compact_id, order_code, defer_days, defer_num, apply_rate,
+            account,
+            cash_compact_id,
+            order_code,
+            defer_days,
+            defer_num,
+            apply_rate,
         )
 
     @_audited("SMT 合约归还")
-    def smt_compact_return_async(self, src_group_id: str, cash_compact_id: str,
-                                 order_code: str, occur_amount: float,
-                                 account_id: str = ""):
+    def smt_compact_return_async(
+        self,
+        src_group_id: str,
+        cash_compact_id: str,
+        order_code: str,
+        occur_amount: float,
+        account_id: str = "",
+    ):
         """异步 SMT 合约归还 → _trader.smt_compact_return_async()"""
         account = self._resolve_account(account_id)
         return self._trader.smt_compact_return_async(
-            account, src_group_id, cash_compact_id, order_code, occur_amount,
+            account,
+            src_group_id,
+            cash_compact_id,
+            order_code,
+            occur_amount,
         )
 
     # ------------------------------------------------------------------
@@ -564,31 +726,57 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("导出交易数据")
-    def export_data(self, result_path: str, data_type: str,
-                    start_time: str = "", end_time: str = "",
-                    user_param: str = "", account_id: str = ""):
+    def export_data(
+        self,
+        result_path: str,
+        data_type: str,
+        start_time: str = "",
+        end_time: str = "",
+        user_param: str = "",
+        account_id: str = "",
+    ):
         """导出交易数据 → _trader.export_data()"""
         account = self._resolve_account(account_id)
         return self._trader.export_data(
-            account, result_path, data_type, start_time, end_time, user_param,
+            account,
+            result_path,
+            data_type,
+            start_time,
+            end_time,
+            user_param,
         )
 
-    def query_data(self, result_path: str, data_type: str,
-                   start_time: str = "", end_time: str = "",
-                   user_param: str = "", account_id: str = ""):
+    def query_data(
+        self,
+        result_path: str,
+        data_type: str,
+        start_time: str = "",
+        end_time: str = "",
+        user_param: str = "",
+        account_id: str = "",
+    ):
         """查询导出数据 → _trader.query_data()"""
         account = self._resolve_account(account_id)
         return self._trader.query_data(
-            account, result_path, data_type, start_time, end_time, user_param,
+            account,
+            result_path,
+            data_type,
+            start_time,
+            end_time,
+            user_param,
         )
 
     @_audited("外部同步交易记录")
-    def sync_transaction_from_external(self, operation: str, data_type: str,
-                                       deal_list: list, account_id: str = ""):
+    def sync_transaction_from_external(
+        self, operation: str, data_type: str, deal_list: list, account_id: str = ""
+    ):
         """从外部同步交易记录 → _trader.sync_transaction_from_external()"""
         account = self._resolve_account(account_id)
         return self._trader.sync_transaction_from_external(
-            operation, data_type, account, deal_list,
+            operation,
+            data_type,
+            account,
+            deal_list,
         )
 
     # ------------------------------------------------------------------
@@ -596,12 +784,21 @@ class XtTraderManager:
     # ------------------------------------------------------------------
 
     @_audited("算法下单")
-    def smart_algo_order_async(self, stock_code: str, order_type: int, order_volume: int,
-                               price_type: int, price: float, algo_name: str,
-                               start_time: str = "", end_time: str = "",
-                               algo_param: dict | None = None,
-                               strategy_name: str = "", order_remark: str = "",
-                               account_id: str = ""):
+    def smart_algo_order_async(
+        self,
+        stock_code: str,
+        order_type: int,
+        order_volume: int,
+        price_type: int,
+        price: float,
+        algo_name: str,
+        start_time: str = "",
+        end_time: str = "",
+        algo_param: dict | None = None,
+        strategy_name: str = "",
+        order_remark: str = "",
+        account_id: str = "",
+    ):
         """算法交易异步下单 → _trader.smart_algo_order_async()
 
         Args:
@@ -626,9 +823,18 @@ class XtTraderManager:
         """
         account = self._resolve_account(account_id)
         return self._trader.smart_algo_order_async(
-            account, stock_code, order_type, order_volume,
-            price_type, price, strategy_name, order_remark,
-            algo_name, start_time, end_time, algo_param or {},
+            account,
+            stock_code,
+            order_type,
+            order_volume,
+            price_type,
+            price,
+            strategy_name,
+            order_remark,
+            algo_name,
+            start_time,
+            end_time,
+            algo_param or {},
         )
 
     @_audited("撤销算法任务")

@@ -40,7 +40,9 @@ def get_tabular_data(
     """
     # 将逗号分隔的代码字符串解析为列表，为空则传空列表
     stock_list = [s.strip() for s in stocks.split(",") if s.strip()] if stocks else []
-    raw = xtdata.get_financial_data(stock_list, table_list=[table_name], start_time=start_time, end_time=end_time)
+    raw = xtdata.get_financial_data(
+        stock_list, table_list=[table_name], start_time=start_time, end_time=end_time
+    )
     return {"table": table_name, "data": _numpy_to_python(raw)}
 
 
@@ -63,7 +65,9 @@ def list_tables():
 
 @router.get("/formula")
 def get_tabular_formula(
-    fields: str = Query(..., description="字段列表，逗号分隔，格式 表名.字段名，如 Balance.total_assets"),
+    fields: str = Query(
+        ..., description="字段列表，逗号分隔，格式 表名.字段名，如 Balance.total_assets"
+    ),
     stocks: str = Query("", description="股票代码列表，逗号分隔"),
     period: str = Query("1d", description="K 线周期"),
     start_time: str = Query("", description="开始时间"),

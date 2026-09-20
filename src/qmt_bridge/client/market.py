@@ -44,12 +44,15 @@ class MarketMixin(BaseClient):
         Returns:
             安装了 pandas 时返回 DataFrame（以 date 为索引），否则返回 list[dict]
         """
-        resp = self._get("/api/history", {
-            "stock": stock,
-            "period": period,
-            "count": count,
-            "fields": fields,
-        })
+        resp = self._get(
+            "/api/history",
+            {
+                "stock": stock,
+                "period": period,
+                "count": count,
+                "fields": fields,
+            },
+        )
         records = resp.get("data", [])
         try:
             import pandas as pd
@@ -83,12 +86,15 @@ class MarketMixin(BaseClient):
         Returns:
             安装了 pandas 时返回 ``dict[str, DataFrame]``，否则返回 ``dict[str, list[dict]]``
         """
-        resp = self._get("/api/batch_history", {
-            "stocks": ",".join(stocks),
-            "period": period,
-            "count": count,
-            "fields": fields,
-        })
+        resp = self._get(
+            "/api/batch_history",
+            {
+                "stocks": ",".join(stocks),
+                "period": period,
+                "count": count,
+                "fields": fields,
+            },
+        )
         data = resp.get("data", {})
         try:
             import pandas as pd
@@ -135,7 +141,9 @@ class MarketMixin(BaseClient):
         resp = self._get("/api/instrument_detail", {"stock": stock})
         return resp.get("detail", {})
 
-    def download(self, stock: str, period: str = "1d", start: str = "", end: str = "") -> dict:
+    def download(
+        self, stock: str, period: str = "1d", start: str = "", end: str = ""
+    ) -> dict:
         """触发服务端下载历史数据（旧版接口）。
 
         向服务端发起数据下载请求，数据会缓存到服务端本地。
@@ -150,12 +158,15 @@ class MarketMixin(BaseClient):
         Returns:
             下载结果信息
         """
-        return self._post("/api/download", {
-            "stock": stock,
-            "period": period,
-            "start": start,
-            "end": end,
-        })
+        return self._post(
+            "/api/download",
+            {
+                "stock": stock,
+                "period": period,
+                "start": start,
+                "end": end,
+            },
+        )
 
     # ------------------------------------------------------------------
     # 新版行情 API
@@ -195,15 +206,18 @@ class MarketMixin(BaseClient):
         Returns:
             ``dict[str, DataFrame]``（安装了 pandas 时），否则为 ``dict[str, list[dict]]``
         """
-        resp = self._get("/api/market/market_data_ex", {
-            "stocks": ",".join(stocks),
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "fill_data": fill_data,
-        })
+        resp = self._get(
+            "/api/market/market_data_ex",
+            {
+                "stocks": ",".join(stocks),
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "fill_data": fill_data,
+            },
+        )
         return self._to_dataframes(resp.get("data", {}))
 
     def get_local_data(
@@ -236,15 +250,18 @@ class MarketMixin(BaseClient):
             dividend_type: 除权类型
             fill_data: 是否填充缺失数据
         """
-        resp = self._get("/api/market/local_data", {
-            "stocks": ",".join(stocks),
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "fill_data": fill_data,
-        })
+        resp = self._get(
+            "/api/market/local_data",
+            {
+                "stocks": ",".join(stocks),
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "fill_data": fill_data,
+            },
+        )
         return self._to_dataframes(resp.get("data", {}))
 
     def get_market_snapshot(self, stocks: list[str]) -> dict:
@@ -288,11 +305,14 @@ class MarketMixin(BaseClient):
         Returns:
             除权因子数据字典
         """
-        resp = self._get("/api/market/divid_factors", {
-            "stock": stock,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/market/divid_factors",
+            {
+                "stock": stock,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})
 
     def get_market_data(
@@ -324,16 +344,19 @@ class MarketMixin(BaseClient):
         Returns:
             原始格式的行情数据字典
         """
-        resp = self._get("/api/market/market_data", {
-            "stocks": ",".join(stocks),
-            "fields": fields,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "fill_data": fill_data,
-        })
+        resp = self._get(
+            "/api/market/market_data",
+            {
+                "stocks": ",".join(stocks),
+                "fields": fields,
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "fill_data": fill_data,
+            },
+        )
         return resp.get("data", {})
 
     def get_market_data3(
@@ -365,16 +388,19 @@ class MarketMixin(BaseClient):
         Returns:
             ``dict[str, DataFrame]``（安装了 pandas 时），否则为 ``dict[str, list[dict]]``
         """
-        resp = self._get("/api/market/market_data3", {
-            "stocks": ",".join(stocks),
-            "fields": fields,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-            "count": count,
-            "dividend_type": dividend_type,
-            "fill_data": fill_data,
-        })
+        resp = self._get(
+            "/api/market/market_data3",
+            {
+                "stocks": ",".join(stocks),
+                "fields": fields,
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+                "count": count,
+                "dividend_type": dividend_type,
+                "fill_data": fill_data,
+            },
+        )
         return self._to_dataframes(resp.get("data", {}))
 
     def get_full_kline(
@@ -394,17 +420,18 @@ class MarketMixin(BaseClient):
         Returns:
             K 线数据字典
         """
-        resp = self._get("/api/market/full_kline", {
-            "stock": stock,
-            "period": period,
-            "start_time": start_time,
-            "end_time": end_time,
-        })
+        resp = self._get(
+            "/api/market/full_kline",
+            {
+                "stock": stock,
+                "period": period,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
         return resp.get("data", {})
 
-    def get_fullspeed_orderbook(
-        self, stocks: str | list[str]
-    ) -> dict:
+    def get_fullspeed_orderbook(self, stocks: str | list[str]) -> dict:
         """获取全速委托簿数据。
 
         底层调用 ``xtdata.get_fullspeed_orderbook()``，返回指定股票的全速
@@ -418,14 +445,15 @@ class MarketMixin(BaseClient):
         """
         if isinstance(stocks, str):
             stocks = [stocks]
-        resp = self._get("/api/market/fullspeed_orderbook", {
-            "stocks": ",".join(stocks),
-        })
+        resp = self._get(
+            "/api/market/fullspeed_orderbook",
+            {
+                "stocks": ",".join(stocks),
+            },
+        )
         return resp.get("data", {})
 
-    def get_transactioncount(
-        self, stocks: str | list[str]
-    ) -> dict:
+    def get_transactioncount(self, stocks: str | list[str]) -> dict:
         """获取成交笔数统计数据。
 
         底层调用 ``xtdata.get_transactioncount()``，返回指定股票的逐笔成交
@@ -439,7 +467,10 @@ class MarketMixin(BaseClient):
         """
         if isinstance(stocks, str):
             stocks = [stocks]
-        resp = self._get("/api/market/transactioncount", {
-            "stocks": ",".join(stocks),
-        })
+        resp = self._get(
+            "/api/market/transactioncount",
+            {
+                "stocks": ",".join(stocks),
+            },
+        )
         return resp.get("data", {})

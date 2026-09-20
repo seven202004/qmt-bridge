@@ -8,6 +8,7 @@
 底层对应 xtquant 的 ``xtdata.get_option_detail_data()``、
 ``xtdata.get_option_undl_data()``、``xtdata.get_option_list()`` 等函数。
 """
+
 from .base import BaseClient
 
 
@@ -65,12 +66,15 @@ class OptionMixin(BaseClient):
         Returns:
             期权合约代码列表
         """
-        resp = self._get("/api/option/list", {
-            "undl_code": undl_code,
-            "dedate": dedate,
-            "opttype": opttype,
-            "isavailable": isavailable,
-        })
+        resp = self._get(
+            "/api/option/list",
+            {
+                "undl_code": undl_code,
+                "dedate": dedate,
+                "opttype": opttype,
+                "isavailable": isavailable,
+            },
+        )
         return resp.get("data", [])
 
     def get_history_option_list(self, undl_code: str, dedate: str) -> list:
@@ -86,9 +90,11 @@ class OptionMixin(BaseClient):
         Returns:
             历史期权合约代码列表
         """
-        resp = self._get("/api/option/his_option_list", {
-            "undl_code": undl_code,
-            "dedate": dedate,
-        })
+        resp = self._get(
+            "/api/option/his_option_list",
+            {
+                "undl_code": undl_code,
+                "dedate": dedate,
+            },
+        )
         return resp.get("data", [])
-
